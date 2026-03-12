@@ -31,8 +31,6 @@ let backgroundLibraryStatus = 'unknown';
 
 const ASSET_RECORD_PATTERN = /^minecraft\/sounds\/records\/([^/]+)\.ogg$/;
 const STATUS_VARIANTS = ['error', 'success', 'warning'];
-const READY_ASSETS_STATUS = '';
-
 function hasExpectedLocalLibrary() {
     return hasPersistedDiscLibrary
         || storageLibraryStatus === 'present'
@@ -51,65 +49,7 @@ function detectPlatform() {
 
 const PLATFORM_KEY = detectPlatform();
 
-const DISC_ID_ALIASES = new Map([
-    ['13', '13'],
-    ['11', '11'],
-    ['5', '5'],
-    ['cat', 'cat'],
-    ['blocks', 'blocks'],
-    ['chirp', 'chirp'],
-    ['far', 'far'],
-    ['mall', 'mall'],
-    ['mellohi', 'mellohi'],
-    ['stal', 'stal'],
-    ['strad', 'strad'],
-    ['ward', 'ward'],
-    ['wait', 'wait'],
-    ['otherside', 'otherside'],
-    ['pigstep', 'pigstep'],
-    ['Pigstep', 'pigstep'],
-    ['music_disc.pigstep', 'pigstep'],
-    ['relic', 'relic'],
-    ['Relic', 'relic'],
-    ['music_disc.relic', 'relic'],
-    ['creator', 'creator'],
-    ['Creator', 'creator'],
-    ['music_disc.creator', 'creator'],
-    ['Creator(MB)', 'creator_music_box'],
-    ['Creator (MB)', 'creator_music_box'],
-    ['Creator Music Box', 'creator_music_box'],
-    ['Creator music box', 'creator_music_box'],
-    ['music_disc.creator_music_box', 'creator_music_box'],
-    ['precipice', 'precipice'],
-    ['Precipice', 'precipice'],
-    ['music_disc.precipice', 'precipice'],
-    ['tears', 'tears'],
-    ['Tears', 'tears'],
-    ['music_disc.tears', 'tears'],
-    ['lava chicken', 'lava_chicken'],
-    ['Lava Chicken', 'lava_chicken'],
-    ['lava_chicken', 'lava_chicken'],
-    ['The Jukebox', 'the_jukebox'],
-    ['the jukebox', 'the_jukebox'],
-    ['the_jukebox', 'the_jukebox'],
-    ['Default 1hr', 'the_jukebox'],
-    ['default 1hr', 'the_jukebox'],
-    ['default_1hr', 'the_jukebox'],
-    ['music_disc.13', '13'],
-    ['music_disc.11', '11'],
-    ['music_disc.5', '5'],
-    ['music_disc.cat', 'cat'],
-    ['music_disc.blocks', 'blocks'],
-    ['music_disc.chirp', 'chirp'],
-    ['music_disc.far', 'far'],
-    ['music_disc.mall', 'mall'],
-    ['music_disc.mellohi', 'mellohi'],
-    ['music_disc.stal', 'stal'],
-    ['music_disc.strad', 'strad'],
-    ['music_disc.ward', 'ward'],
-    ['music_disc.wait', 'wait'],
-    ['music_disc.otherside', 'otherside']
-]);
+/* DISC_ID_ALIASES and toAssetKey are loaded from shared.js */
 
 const STREAMING_SOURCE_MAP = new Map([
     ['11', [
@@ -212,81 +152,6 @@ const JUKEBOX_TRACKS = Object.freeze([
     { title: 'Pigstep', url: 'https://archive.org/download/minecraft-nether-update-original-game-soundtrack-flac/04.%20Lena%20Raine%20-%20Pigstep%20%28Mono%20Mix%29.mp3' }
 ]);
 
-let streamingHostsWarmed = false;
-
-function normalizeStreamingUrl(url) {
-    if (typeof url !== 'string') {
-        return null;
-    }
-    const trimmed = url.trim();
-    if (!trimmed) {
-        return null;
-    }
-    return /^https?:\/\//i.test(trimmed) ? trimmed : null;
-}
-
-function isStreamingEnabled() {
-    return true;
-}
-
-function warmStreamingHosts() {
-    if (streamingHostsWarmed || typeof document === 'undefined') {
-        return;
-    }
-
-    const head = document.head || document.getElementsByTagName('head')[0];
-    if (!head) {
-        return;
-    }
-
-    const origins = new Set();
-    for (const urls of STREAMING_SOURCE_MAP.values()) {
-        if (!Array.isArray(urls)) {
-            continue;
-        }
-        for (const candidate of urls) {
-            const normalized = normalizeStreamingUrl(candidate);
-            if (!normalized) {
-                continue;
-            }
-            try {
-                origins.add(new URL(normalized).origin);
-            } catch (error) {
-                /* ignore invalid streaming URLs */
-            }
-        }
-    }
-
-    for (const track of JUKEBOX_TRACKS) {
-        if (!track || typeof track.url !== 'string') {
-            continue;
-        }
-        const normalized = normalizeStreamingUrl(track.url);
-        if (!normalized) {
-            continue;
-        }
-        try {
-            origins.add(new URL(normalized).origin);
-        } catch (error) {
-            /* ignore invalid streaming URLs */
-        }
-    }
-
-    origins.forEach(origin => {
-        const link = document.createElement('link');
-        link.rel = 'preconnect';
-        link.href = origin;
-        link.crossOrigin = 'anonymous';
-        head.appendChild(link);
-    });
-
-    streamingHostsWarmed = true;
-}
-
-if (typeof document !== 'undefined') {
-    warmStreamingHosts();
-}
-
 function slugifyForJukebox(value) {
     return String(value || '')
         .toLowerCase()
@@ -294,30 +159,10 @@ function slugifyForJukebox(value) {
         .replace(/^-+|-+$/g, '');
 }
 
-function secureRandomIntExclusive(max) {
-    if (!Number.isInteger(max) || max <= 0) {
-        return 0;
-    }
-    if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
-        const uint32 = new Uint32Array(1);
-        const upperBound = 0x100000000;
-        const acceptableTop = upperBound - (upperBound % max);
-        do {
-            crypto.getRandomValues(uint32);
-        } while (uint32[0] >= acceptableTop);
-        return uint32[0] % max;
-    }
-    return Math.floor(Math.random() * max);
-}
-
-function shuffleArrayInPlace(array) {
-    for (let index = array.length - 1; index > 0; index -= 1) {
-        const swapIndex = secureRandomIntExclusive(index + 1);
-        if (swapIndex !== index) {
-            const temp = array[index];
-            array[index] = array[swapIndex];
-            array[swapIndex] = temp;
-        }
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
     }
     return array;
 }
@@ -330,20 +175,12 @@ function getRandomizedJukeboxTracks(limit) {
     if (!Number.isInteger(limit) || limit <= 0) {
         return [];
     }
-    const candidates = JUKEBOX_TRACKS.filter(track => {
-        return track
-            && typeof track.title === 'string'
-            && track.title.trim()
-            && typeof track.url === 'string'
-            && normalizeStreamingUrl(track.url);
-    }).map(track => ({
-        title: track.title.trim(),
-        url: normalizeStreamingUrl(track.url)
-    }));
+    const candidates = JUKEBOX_TRACKS.filter(track => track && track.title && track.url)
+        .map(track => ({ title: track.title.trim(), url: track.url }));
     if (!candidates.length) {
         return [];
     }
-    const pool = shuffleArrayInPlace(candidates.slice());
+    const pool = shuffleArray(candidates.slice());
     return pool.slice(0, Math.min(limit, pool.length));
 }
 
@@ -358,11 +195,7 @@ function canDiscStreamWithoutLibrary(discId) {
 }
 
 function buildJukeboxTrackPayload(track, index) {
-    if (!track || typeof track.title !== 'string' || typeof track.url !== 'string') {
-        return null;
-    }
-    const normalizedUrl = normalizeStreamingUrl(track.url);
-    if (!normalizedUrl) {
+    if (!track || !track.title || !track.url) {
         return null;
     }
     const trimmedTitle = track.title.trim();
@@ -375,7 +208,7 @@ function buildJukeboxTrackPayload(track, index) {
     return {
         discId: trimmedTitle,
         assetKey: `${JUKEBOX_DISC_ID}_${paddedOrder}_${slug}`,
-        objectUrl: normalizedUrl,
+        objectUrl: track.url,
         isStream: true
     };
 }
@@ -591,19 +424,6 @@ function withHint(baseMessage, hint) {
     return `${baseMessage} (${hint})`;
 }
 
-function getPlatformDisplayName() {
-    switch (PLATFORM_KEY) {
-        case 'windows':
-            return 'Windows';
-        case 'mac':
-            return 'macOS';
-        case 'linux':
-            return 'Linux';
-        default:
-            return 'Your system';
-    }
-}
-
 function normalizeRelativePath(path) {
     if (!path) {
         return '';
@@ -688,11 +508,7 @@ function collectObjectFiles(files = []) {
     return objectFiles;
 }
 
-function buildDefaultAssetsStatus() {
-    return '';
-}
-
-const DEFAULT_ASSETS_STATUS = buildDefaultAssetsStatus();
+const DEFAULT_ASSETS_STATUS = '';
 
 let minecraftAssetsHandles = null;
 let discHashIndex = new Map();
@@ -759,16 +575,10 @@ function setAssetsStatus(message = DEFAULT_ASSETS_STATUS, variant = null, { auto
     if (autoClear) {
         assetsStatusClearTimer = setTimeout(() => {
             assetsStatusClearTimer = null;
-            if (isDiscLibraryReady) {
-                setAssetsStatus(READY_ASSETS_STATUS);
-            } else {
-                setAssetsStatus(DEFAULT_ASSETS_STATUS);
-            }
+            setAssetsStatus(DEFAULT_ASSETS_STATUS);
         }, Math.max(1000, clearDelay));
     }
 }
-
-function showDiscLibraryNotReadyStatus() {}
 
 function enqueueDiscAction(action) {
     if (!action || !action.discId) {
@@ -804,18 +614,6 @@ function flushPendingDiscActions() {
     }
 }
 
-function exposeDiscObjectUrls() {
-    if (typeof window === 'undefined') {
-        return;
-    }
-    const plain = Object.fromEntries(discObjectUrlRegistry.entries());
-    Object.defineProperty(window, 'minecraftDiscObjectUrls', {
-        value: Object.freeze(plain),
-        writable: false,
-        configurable: true
-    });
-}
-
 function releaseDiscObjectUrls() {
     const uniqueUrls = new Set(discObjectUrlRegistry.values());
     for (const url of uniqueUrls) {
@@ -826,7 +624,6 @@ function releaseDiscObjectUrls() {
         }
     }
     discObjectUrlRegistry.clear();
-    exposeDiscObjectUrls();
 }
 
 function resetDiscLibraryState() {
@@ -854,43 +651,7 @@ function isSystemFolderError(error) {
     return message.includes('system file') || message.includes('system files');
 }
 
-function toAssetKey(discId) {
-    if (discId == null) {
-        return null;
-    }
-
-    const raw = String(discId).trim();
-    if (!raw) {
-        return null;
-    }
-
-    if (DISC_ID_ALIASES.has(raw)) {
-        return DISC_ID_ALIASES.get(raw);
-    }
-
-    const lower = raw.toLowerCase();
-    if (DISC_ID_ALIASES.has(lower)) {
-        return DISC_ID_ALIASES.get(lower);
-    }
-
-    if (lower.startsWith('music_disc.')) {
-        const shortened = lower.slice('music_disc.'.length);
-        if (DISC_ID_ALIASES.has(shortened)) {
-            return DISC_ID_ALIASES.get(shortened);
-        }
-        return shortened;
-    }
-
-    const sanitized = lower.replace(/[^a-z0-9]/g, '');
-    for (const [key, value] of DISC_ID_ALIASES.entries()) {
-        const normalizedKey = String(key).toLowerCase().replace(/[^a-z0-9]/g, '');
-        if (sanitized && sanitized === normalizedKey) {
-            return value;
-        }
-    }
-
-    return sanitized || lower;
-}
+/* toAssetKey is provided by shared.js */
 
 function hasDiscLibrary() {
     return discHashIndex.size > 0;
@@ -1173,7 +934,6 @@ async function sendUploadedAssetsToBackground({ discIndex, latestIndexName, blob
 
     for (const [key, file] of blobEntries) {
         const keyString = String(key);
-        console.log(`[MinecraftJukebox] Sending blob for key: ${keyString}, size: ${file.size} bytes, type: ${file.type}`);
         const success = await sendBlobFile(keyString, file);
         if (!success) {
             console.error('[MinecraftJukebox] Failed to cache blob for key:', keyString);
@@ -1184,7 +944,6 @@ async function sendUploadedAssetsToBackground({ discIndex, latestIndexName, blob
             });
             return false;
         }
-        console.log(`[MinecraftJukebox] Successfully sent blob for key: ${keyString}`);
         uploadedKeys.add(keyString);
     }
 
@@ -1193,7 +952,6 @@ async function sendUploadedAssetsToBackground({ discIndex, latestIndexName, blob
         keys: Array.from(uploadedKeys)
     });
 
-    console.log(`[MinecraftJukebox] Successfully cached ${uploadedKeys.size} audio files`);
     return true;
 }
 
@@ -1236,7 +994,6 @@ async function buildDiscLibraryFromFiles({ discs, objectFileMap, latestIndexName
     discHashIndex = newHashIndex;
     discObjectUrlRegistry = newObjectUrls;
     minecraftAssetsHandles = null;
-    exposeDiscObjectUrls();
     markDiscLibraryReady(true);
 
     const loadedCount = resolvedDiscKeys.size;
@@ -1312,7 +1069,6 @@ async function buildRuntimeDiscLibrary({
         root: rootHandle,
         objects: objectsHandle
     };
-    exposeDiscObjectUrls();
     markDiscLibraryReady(true);
 
     sendAssetsSelectionToBackground({
@@ -1335,20 +1091,7 @@ function getStreamingSources(discId) {
     if (!desiredKey) {
         return [];
     }
-
-    const candidates = STREAMING_SOURCE_MAP.get(desiredKey);
-    if (!Array.isArray(candidates)) {
-        return [];
-    }
-
-    const normalized = [];
-    for (const candidate of candidates) {
-        const normalizedUrl = normalizeStreamingUrl(candidate);
-        if (normalizedUrl && !normalized.includes(normalizedUrl)) {
-            normalized.push(normalizedUrl);
-        }
-    }
-    return normalized;
+    return STREAMING_SOURCE_MAP.get(desiredKey) || [];
 }
 
 function hasStreamingSource(discId) {
@@ -1379,7 +1122,7 @@ function resolveDiscEntry(discId, { allowStreaming = true } = {}) {
         }
     }
 
-    if (!allowStreaming || !isStreamingEnabled()) {
+    if (!allowStreaming) {
         return null;
     }
 
@@ -1401,7 +1144,6 @@ if (assetsStatusLabel) {
     setAssetsStatus(DEFAULT_ASSETS_STATUS);
 }
 
-exposeDiscObjectUrls();
 updateDiscAvailabilityIndicators();
 refreshAssetsControlsLock();
 
@@ -1418,7 +1160,7 @@ function markDiscLibraryReady(ready) {
     updateDiscAvailabilityIndicators();
     refreshAssetsControlsLock();
     if (isDiscLibraryReady && (!assetsStatusLabel || assetsStatusLabel.textContent === DEFAULT_ASSETS_STATUS)) {
-        setAssetsStatus(READY_ASSETS_STATUS);
+        setAssetsStatus(DEFAULT_ASSETS_STATUS);
     }
     if (isDiscLibraryReady) {
         flushPendingDiscActions();
@@ -1478,11 +1220,6 @@ if (scaleSelect) {
 }
 
 applyScalePreference(DEFAULT_SCALE);
-
-function getAudioPath(discId) {
-    const entry = resolveDiscEntry(discId);
-    return entry?.objectUrl ?? null;
-}
 
 function formatTime(seconds) {
     if (!Number.isFinite(seconds) || seconds < 0) {
@@ -1657,7 +1394,7 @@ function queueDisc(discId, { allowRetry = true } = {}) {
         return;
     }
 
-    const canStreamImmediately = isStreamingEnabled() && hasStreamingSource(discId);
+    const canStreamImmediately = hasStreamingSource(discId);
     const expectLocalLibrary = hasExpectedLocalLibrary();
 
     if (!isDiscLibraryReady && !canStreamImmediately) {
@@ -1715,17 +1452,13 @@ function reorderQueue(fromIndex, toIndex) {
 }
 
 function handleDiscSelection(discId, { queueOnly = false, allowRetry = true } = {}) {
-    console.log(`[MinecraftJukebox] Disc selected: ${discId}, queueOnly: ${queueOnly}`);
-    console.log(`[MinecraftJukebox] isDiscLibraryReady: ${isDiscLibraryReady}`);
-    console.log(`[MinecraftJukebox] discHashIndex.size: ${discHashIndex.size}`);
-    console.log(`[MinecraftJukebox] discObjectUrlRegistry.size: ${discObjectUrlRegistry.size}`);
 
     if (isJukeboxDisc(discId)) {
         handleJukeboxSelection({ queueOnly });
         return;
     }
     
-    const canStreamImmediately = isStreamingEnabled() && hasStreamingSource(discId);
+    const canStreamImmediately = hasStreamingSource(discId);
     const expectLocalLibrary = hasExpectedLocalLibrary();
 
     if (!isDiscLibraryReady && !canStreamImmediately) {
@@ -1743,7 +1476,6 @@ function handleDiscSelection(discId, { queueOnly = false, allowRetry = true } = 
     }
 
     const entry = resolveDiscEntry(discId, { allowStreaming: canStreamImmediately });
-    console.log(`[MinecraftJukebox] Resolved entry for ${discId}:`, entry);
     
     if (!entry) {
         if (!isDiscLibraryReady && expectLocalLibrary) {
@@ -1760,7 +1492,6 @@ function handleDiscSelection(discId, { queueOnly = false, allowRetry = true } = 
         return;
     }
 
-    console.log(`[MinecraftJukebox] Sending playDisc message for ${discId}`);
     const payload = {
         type: 'playDisc',
         discId,
@@ -2014,8 +1745,6 @@ async function handleAssetsSelection() {
         if (!handledByFallback) {
             if (!hadExistingLibrary) {
                 resetDiscLibraryState();
-            } else {
-                exposeDiscObjectUrls();
             }
         }
     } finally {
@@ -2230,7 +1959,6 @@ async function hydrateDiscLibraryFromBackground(assets = {}) {
     }
 
     isLoadingAssets = true;
-    showDiscLibraryNotReadyStatus();
 
     try {
         const discs = [];
@@ -2454,7 +2182,6 @@ function requestDiscBlob(key) {
                         bytes[i] = binaryString.charCodeAt(i);
                     }
                     const blob = new Blob([bytes], { type: mimeType });
-                    console.log(`[MinecraftJukebox] Reconstructed blob for playback: ${response.key}, size: ${blob.size} bytes, type: ${blob.type}`);
                     resolve({ blob, hash: response.hash, key: response.key });
                 } catch (error) {
                     console.error('[MinecraftJukebox] Failed to reconstruct blob from base64:', error);
