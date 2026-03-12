@@ -1,4 +1,7 @@
 const MAX_VOLUME = 3;
+const BLOB_DB_NAME = 'minecraftJukeboxAssets';
+const BLOB_DB_VERSION = 1;
+const BLOB_STORE_NAME = 'discBlobs';
 
 let currentlyPlayingAudio = null;
 let currentDiscId = null;
@@ -7,6 +10,39 @@ let audioContext = null;
 let gainNode = null;
 let sourceNode = null;
 let currentBlobUrl = null;
+let currentIsRemoteStream = false;
+
+function loadBlobFromCache(key) {
+    return new Promise((resolve) => {
+        try {
+            const request = indexedDB.open(BLOB_DB_NAME, BLOB_DB_VERSION);
+            request.onupgradeneeded = event => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains(BLOB_STORE_NAME)) {
+                    db.createObjectStore(BLOB_STORE_NAME, { keyPath: 'key' });
+                }
+            };
+            request.onsuccess = event => {
+                const db = event.target.result;
+                const tx = db.transaction(BLOB_STORE_NAME, 'readonly');
+                const store = tx.objectStore(BLOB_STORE_NAME);
+                const getReq = store.get(key);
+                getReq.onsuccess = () => {
+                    const record = getReq.result;
+                    if (record && record.blob instanceof Blob) {
+                        resolve(record.blob);
+                    } else {
+                        resolve(null);
+                    }
+                };
+                getReq.onerror = () => resolve(null);
+            };
+            request.onerror = () => resolve(null);
+        } catch (error) {
+            resolve(null);
+        }
+    });
+}
 
 function safeSendMessage(payload) {
     const maybePromise = chrome.runtime.sendMessage(payload);
@@ -15,19 +51,36 @@ function safeSendMessage(payload) {
     }
 }
 
+let lastProgressSentAt = 0;
+const PROGRESS_THROTTLE_MS = 1000;
+
+function throttledProgressUpdate() {
+    const now = Date.now();
+    if (now - lastProgressSentAt < PROGRESS_THROTTLE_MS) {
+        return;
+    }
+    lastProgressSentAt = now;
+    sendProgressUpdate();
+}
+
+function immediateProgressUpdate() {
+    lastProgressSentAt = Date.now();
+    sendProgressUpdate();
+}
+
 function attachAudioHandlers(audio) {
-    audio.addEventListener('timeupdate', sendProgressUpdate);
-    audio.addEventListener('play', sendProgressUpdate);
-    audio.addEventListener('pause', sendProgressUpdate);
-    audio.addEventListener('loadedmetadata', sendProgressUpdate);
+    audio.addEventListener('timeupdate', throttledProgressUpdate);
+    audio.addEventListener('play', immediateProgressUpdate);
+    audio.addEventListener('pause', immediateProgressUpdate);
+    audio.addEventListener('loadedmetadata', immediateProgressUpdate);
     audio.addEventListener('ended', handleEnded);
 }
 
 function detachAudioHandlers(audio) {
-    audio.removeEventListener('timeupdate', sendProgressUpdate);
-    audio.removeEventListener('play', sendProgressUpdate);
-    audio.removeEventListener('pause', sendProgressUpdate);
-    audio.removeEventListener('loadedmetadata', sendProgressUpdate);
+    audio.removeEventListener('timeupdate', throttledProgressUpdate);
+    audio.removeEventListener('play', immediateProgressUpdate);
+    audio.removeEventListener('pause', immediateProgressUpdate);
+    audio.removeEventListener('loadedmetadata', immediateProgressUpdate);
     audio.removeEventListener('ended', handleEnded);
     if (audio._minecraftErrorHandler) {
         audio.removeEventListener('error', audio._minecraftErrorHandler);
@@ -115,13 +168,7 @@ function ensureAudioGraph(audio) {
     }
 }
 
-function playAudio({ source, blob, base64Data, mimeType, volume = 1, discId }) {
-    console.log(`[MinecraftJukebox Offscreen] playAudio called for ${discId}`);
-    console.log(`[MinecraftJukebox Offscreen] source:`, source);
-    console.log(`[MinecraftJukebox Offscreen] blob:`, blob);
-    console.log(`[MinecraftJukebox Offscreen] base64Data length:`, base64Data?.length);
-    console.log(`[MinecraftJukebox Offscreen] mimeType:`, mimeType);
-    
+async function playAudio({ source, blob, base64Data, mimeType, volume = 1, discId, cacheKey }) {
     if (currentlyPlayingAudio) {
         detachAudioHandlers(currentlyPlayingAudio);
         currentlyPlayingAudio.pause();
@@ -130,8 +177,17 @@ function playAudio({ source, blob, base64Data, mimeType, volume = 1, discId }) {
     revokeCurrentBlobUrl();
 
     let resolvedSource = source || null;
-    
-    // Handle base64 data
+    let isRemote = resolvedSource ? /^https?:\/\//i.test(resolvedSource) : false;
+
+    if (!resolvedSource && typeof cacheKey === 'string') {
+        const cached = await loadBlobFromCache(cacheKey);
+        if (cached) {
+            currentBlobUrl = URL.createObjectURL(cached);
+            resolvedSource = currentBlobUrl;
+            isRemote = false;
+        }
+    }
+
     if (!resolvedSource && typeof base64Data === 'string') {
         try {
             const binaryString = atob(base64Data);
@@ -139,39 +195,34 @@ function playAudio({ source, blob, base64Data, mimeType, volume = 1, discId }) {
             for (let i = 0; i < binaryString.length; i++) {
                 bytes[i] = binaryString.charCodeAt(i);
             }
-            const blob = new Blob([bytes], { type: mimeType || 'audio/ogg' });
-            currentBlobUrl = URL.createObjectURL(blob);
+            const reconstructed = new Blob([bytes], { type: mimeType || 'audio/ogg' });
+            currentBlobUrl = URL.createObjectURL(reconstructed);
             resolvedSource = currentBlobUrl;
-            console.log(`[MinecraftJukebox Offscreen] Created blob from base64, size: ${blob.size} bytes`);
-            console.log(`[MinecraftJukebox Offscreen] Created object URL: ${currentBlobUrl}`);
+            isRemote = false;
         } catch (error) {
-            console.error(`[MinecraftJukebox Offscreen] Failed to decode base64:`, error);
+            console.error('[MinecraftJukebox Offscreen] Failed to decode base64:', error);
         }
     }
-    
-    // Handle direct blob
+
     if (!resolvedSource && blob instanceof Blob) {
         currentBlobUrl = URL.createObjectURL(blob);
         resolvedSource = currentBlobUrl;
-        console.log(`[MinecraftJukebox Offscreen] Created object URL from blob: ${currentBlobUrl}`);
+        isRemote = false;
     }
 
     if (!resolvedSource) {
-        console.error(`[MinecraftJukebox Offscreen] No valid source for ${discId}`);
         notifyTrackStopped('error');
         return;
     }
 
-    console.log(`[MinecraftJukebox Offscreen] Creating Audio with source: ${resolvedSource}`);
     const audio = new Audio();
-    if (/^https?:\/\//i.test(resolvedSource)) {
-        audio.crossOrigin = 'anonymous';
+    if (!isRemote) {
         audio.preload = 'auto';
     }
     audio.src = resolvedSource;
     currentVolume = clampVolume(volume);
+    currentIsRemoteStream = isRemote;
     audio.loop = false;
-    audio.volume = 1;
     audio.currentTime = 0;
 
     attachAudioHandlers(audio);
@@ -180,7 +231,7 @@ function playAudio({ source, blob, base64Data, mimeType, volume = 1, discId }) {
             return;
         }
         audio._minecraftErrorHandled = true;
-        console.error(`[MinecraftJukebox Offscreen] Audio element error for ${discId}:`, event?.error || event);
+        console.error('[MinecraftJukebox Offscreen] Audio error for', discId, event?.error || event);
         notifyTrackStopped('error');
         detachAudioHandlers(audio);
         if (currentlyPlayingAudio === audio) {
@@ -193,24 +244,23 @@ function playAudio({ source, blob, base64Data, mimeType, volume = 1, discId }) {
     currentlyPlayingAudio = audio;
     currentDiscId = discId || currentDiscId;
 
-    ensureAudioGraph(audio);
-    if (gainNode) {
-        gainNode.gain.value = currentVolume;
-    }
-
-    if (audioContext && audioContext.state === 'suspended') {
-        console.log(`[MinecraftJukebox Offscreen] Resuming audio context`);
-        audioContext.resume().catch(() => {});
+    if (isRemote) {
+        audio.volume = Math.min(Math.max(currentVolume, 0), 1);
+    } else {
+        ensureAudioGraph(audio);
+        if (gainNode) {
+            gainNode.gain.value = currentVolume;
+        }
+        if (audioContext && audioContext.state === 'suspended') {
+            audioContext.resume().catch(() => {});
+        }
     }
 
     sendProgressUpdate();
 
-    console.log(`[MinecraftJukebox Offscreen] Attempting to play audio for ${discId}`);
     audio.play().then(() => {
-        console.log(`[MinecraftJukebox Offscreen] Audio play started successfully for ${discId}`);
         sendProgressUpdate();
     }).catch(error => {
-        console.error(`[MinecraftJukebox Offscreen] Audio play failed for ${discId}:`, error);
         handleError(error);
     });
 }
@@ -225,7 +275,9 @@ function setVolume(volume) {
         }
         return;
     }
-    if (gainNode) {
+    if (currentIsRemoteStream) {
+        audio.volume = Math.min(Math.max(currentVolume, 0), 1);
+    } else if (gainNode) {
         gainNode.gain.value = currentVolume;
     } else {
         audio.volume = Math.min(Math.max(currentVolume, 0), 1);

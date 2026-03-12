@@ -1,65 +1,7 @@
+importScripts('shared.js');
+
 const DEFAULT_VOLUME = 1;
 const MAX_VOLUME = 3;
-
-const DISC_ID_ALIASES = new Map([
-    ['13', '13'],
-    ['11', '11'],
-    ['5', '5'],
-    ['cat', 'cat'],
-    ['blocks', 'blocks'],
-    ['chirp', 'chirp'],
-    ['far', 'far'],
-    ['mall', 'mall'],
-    ['mellohi', 'mellohi'],
-    ['stal', 'stal'],
-    ['strad', 'strad'],
-    ['ward', 'ward'],
-    ['wait', 'wait'],
-    ['otherside', 'otherside'],
-    ['pigstep', 'pigstep'],
-    ['Pigstep', 'pigstep'],
-    ['music_disc.pigstep', 'pigstep'],
-    ['relic', 'relic'],
-    ['Relic', 'relic'],
-    ['music_disc.relic', 'relic'],
-    ['creator', 'creator'],
-    ['Creator', 'creator'],
-    ['music_disc.creator', 'creator'],
-    ['Creator(MB)', 'creator_music_box'],
-    ['Creator (MB)', 'creator_music_box'],
-    ['Creator Music Box', 'creator_music_box'],
-    ['Creator music box', 'creator_music_box'],
-    ['music_disc.creator_music_box', 'creator_music_box'],
-    ['precipice', 'precipice'],
-    ['Precipice', 'precipice'],
-    ['music_disc.precipice', 'precipice'],
-    ['tears', 'tears'],
-    ['Tears', 'tears'],
-    ['music_disc.tears', 'tears'],
-    ['lava chicken', 'lava_chicken'],
-    ['Lava Chicken', 'lava_chicken'],
-    ['lava_chicken', 'lava_chicken'],
-    ['The Jukebox', 'the_jukebox'],
-    ['the jukebox', 'the_jukebox'],
-    ['the_jukebox', 'the_jukebox'],
-    ['Default 1hr', 'the_jukebox'],
-    ['default 1hr', 'the_jukebox'],
-    ['default_1hr', 'the_jukebox'],
-    ['music_disc.13', '13'],
-    ['music_disc.11', '11'],
-    ['music_disc.5', '5'],
-    ['music_disc.cat', 'cat'],
-    ['music_disc.blocks', 'blocks'],
-    ['music_disc.chirp', 'chirp'],
-    ['music_disc.far', 'far'],
-    ['music_disc.mall', 'mall'],
-    ['music_disc.mellohi', 'mellohi'],
-    ['music_disc.stal', 'stal'],
-    ['music_disc.strad', 'strad'],
-    ['music_disc.ward', 'ward'],
-    ['music_disc.wait', 'wait'],
-    ['music_disc.otherside', 'otherside']
-]);
 
 const minecraftAssetState = {
     rootDirectory: null,
@@ -144,9 +86,6 @@ async function storeBlobEntries(entries = []) {
                 }
             };
         });
-        if (entries.length > 0) {
-            console.log(`[MinecraftJukebox] Cached ${entries.length} audio files to IndexedDB`);
-        }
     } catch (error) {
         console.warn('[MinecraftJukebox] Failed to persist blob assets', error);
     }
@@ -177,25 +116,6 @@ async function hydrateBlobLibraryFromDb() {
         }
         blobAssetLibrary.set(record.key, { blob: record.blob, objectUrl: null });
     }
-    if (blobAssetLibrary.size > 0) {
-        console.log(`[MinecraftJukebox] Restored ${blobAssetLibrary.size} cached audio files from IndexedDB`);
-    }
-}
-
-async function verifyBlobStorage() {
-    try {
-        const records = await loadBlobEntries();
-        console.log(`[MinecraftJukebox] VERIFICATION: IndexedDB contains ${records.length} blob records`);
-        for (const record of records) {
-            if (record && record.blob instanceof Blob) {
-                console.log(`[MinecraftJukebox] VERIFICATION: Key "${record.key}" -> Blob size: ${record.blob.size} bytes`);
-            } else {
-                console.warn(`[MinecraftJukebox] VERIFICATION: Key "${record?.key}" has invalid blob`);
-            }
-        }
-    } catch (error) {
-        console.error('[MinecraftJukebox] Failed to verify blob storage:', error);
-    }
 }
 
 async function storeSingleBlobEntry(key, blob) {
@@ -207,7 +127,6 @@ async function storeSingleBlobEntry(key, blob) {
         
         await new Promise((resolve, reject) => {
             transaction.oncomplete = () => {
-                console.log(`[MinecraftJukebox] Stored blob for key: ${key}, size: ${blob.size} bytes`);
                 resolve();
             };
             transaction.onerror = () => reject(transaction.error);
@@ -305,6 +224,9 @@ let blobLibraryReady = hydrateBlobLibraryFromDb();
 const stateReady = loadStateFromStorage();
 let hasActiveAudioSession = false;
 let volumeLevel = DEFAULT_VOLUME;
+let consecutiveStreamErrors = 0;
+const MAX_CONSECUTIVE_ERRORS = 3;
+const ERROR_ADVANCE_DELAY_MS = 500;
 
 function beginBlobUploadWait() {
     blobLibraryReady = new Promise(resolve => {
@@ -319,37 +241,7 @@ function finishBlobUploadWait() {
     }
 }
 
-function toAssetKey(value) {
-    if (value == null) {
-        return null;
-    }
-    const raw = String(value).trim();
-    if (!raw) {
-        return null;
-    }
-    if (DISC_ID_ALIASES.has(raw)) {
-        return DISC_ID_ALIASES.get(raw);
-    }
-    const lower = raw.toLowerCase();
-    if (DISC_ID_ALIASES.has(lower)) {
-        return DISC_ID_ALIASES.get(lower);
-    }
-    if (lower.startsWith('music_disc.')) {
-        const shortened = lower.slice('music_disc.'.length);
-        if (DISC_ID_ALIASES.has(shortened)) {
-            return DISC_ID_ALIASES.get(shortened);
-        }
-        return shortened;
-    }
-    const sanitized = lower.replace(/[^a-z0-9]/g, '');
-    for (const [key, aliasValue] of DISC_ID_ALIASES.entries()) {
-        const normalizedKey = String(key).toLowerCase().replace(/[^a-z0-9]/g, '');
-        if (sanitized && sanitized === normalizedKey) {
-            return aliasValue;
-        }
-    }
-    return sanitized || lower;
-}
+/* toAssetKey is provided by shared.js via importScripts */
 
 function hasDiscLibrary() {
     const hasHandles = Boolean(minecraftAssetState.objectsDirectory && minecraftAssetState.discIndex.size > 0);
@@ -580,42 +472,30 @@ async function loadStateFromStorage() {
     }
 }
 
-async function playSound({ blob = null, source = null, volume = DEFAULT_VOLUME, discId = null } = {}) {
-    console.log(`[MinecraftJukebox] playSound called for ${discId}`);
-    console.log(`[MinecraftJukebox] blob:`, blob);
-    console.log(`[MinecraftJukebox] blob size:`, blob?.size);
-    console.log(`[MinecraftJukebox] blob type:`, blob?.type);
-    console.log(`[MinecraftJukebox] source:`, source);
-    console.log(`[MinecraftJukebox] volume:`, volume);
-    
+async function playSound({ blob = null, source = null, volume = DEFAULT_VOLUME, discId = null, assetKey = null } = {}) {
     await createOffscreen();
     const payload = { play: { volume, discId } };
-    
-    if (blob instanceof Blob) {
-        // Convert blob to base64 for message passing
+
+    if (blob instanceof Blob && assetKey && blobAssetLibrary.has(assetKey)) {
+        payload.play.cacheKey = assetKey;
+    } else if (blob instanceof Blob) {
         try {
             const arrayBuffer = await blob.arrayBuffer();
             const uint8Array = new Uint8Array(arrayBuffer);
             const binaryString = Array.from(uint8Array, byte => String.fromCharCode(byte)).join('');
-            const base64Data = btoa(binaryString);
-            payload.play.base64Data = base64Data;
+            payload.play.base64Data = btoa(binaryString);
             payload.play.mimeType = blob.type || 'audio/ogg';
-            console.log(`[MinecraftJukebox] Converted blob to base64, size: ${blob.size} bytes`);
         } catch (error) {
-            console.error(`[MinecraftJukebox] Failed to convert blob to base64:`, error);
+            console.error('[MinecraftJukebox] Failed to convert blob to base64:', error);
             return;
         }
     }
-    
+
     if (typeof source === 'string') {
         payload.play.source = source;
-        console.log(`[MinecraftJukebox] Sending source to offscreen: ${source}`);
     }
-    
-    console.log(`[MinecraftJukebox] Sending play message to offscreen`);
-    await chrome.runtime.sendMessage(payload).catch(error => {
-        console.error(`[MinecraftJukebox] Failed to send play message to offscreen:`, error);
-    });
+
+    await chrome.runtime.sendMessage(payload).catch(() => {});
 }
 
 async function createOffscreen() {
@@ -623,7 +503,7 @@ async function createOffscreen() {
     await chrome.offscreen.createDocument({
         url: 'offscreen.html',
         reasons: ['AUDIO_PLAYBACK'],
-        justification: 'Used to contuine playing music after popup is closed.'
+        justification: 'Used to continue playing music after popup is closed.'
     });
 }
 
@@ -748,9 +628,9 @@ async function playTrack(track, { pushCurrentToHistory = true } = {}) {
             isPlaying: false
         };
 
-        console.log(`[MinecraftJukebox] Streaming ${discId} from ${streamSource}`);
         await playSound({ source: streamSource, volume: volumeLevel, discId });
         hasActiveAudioSession = true;
+        consecutiveStreamErrors = 0;
         await persistState();
         broadcastState();
         return true;
@@ -760,9 +640,6 @@ async function playTrack(track, { pushCurrentToHistory = true } = {}) {
     const blobEntry = blobAssetLibrary.get(assetKey);
     if (blobEntry && blobEntry.blob instanceof Blob) {
         sourceBlob = blobEntry.blob;
-        console.log(`[MinecraftJukebox] Using cached blob for ${discId}, size: ${sourceBlob.size} bytes`);
-    } else {
-        console.log(`[MinecraftJukebox] No cached blob found for ${discId}, will try file handle`);
     }
 
     let fallbackSource = null;
@@ -771,10 +648,8 @@ async function playTrack(track, { pushCurrentToHistory = true } = {}) {
         const file = await getDiscFile(assetKey).catch(() => null);
         if (file) {
             sourceBlob = file;
-            console.log(`[MinecraftJukebox] Using file handle for ${discId}, size: ${file.size} bytes`);
         } else if (primarySource && !isRemoteSource(primarySource)) {
             fallbackSource = primarySource;
-            console.log(`[MinecraftJukebox] Using provided source URL for ${discId}`);
         } else {
             console.error(`[MinecraftJukebox] No audio source found for ${discId}`);
             notifyAssetsIssue(`Unable to load audio for ${discId}.`, { level: 'error', discId });
@@ -804,14 +679,9 @@ async function playTrack(track, { pushCurrentToHistory = true } = {}) {
         isPlaying: false
     };
 
-    if (sourceBlob) {
-        console.log(`[MinecraftJukebox] Playing ${discId} with blob size: ${sourceBlob.size} bytes`);
-    } else if (fallbackSource) {
-        console.log(`[MinecraftJukebox] Playing ${discId} from provided source URL`);
-    }
-
-    await playSound({ blob: sourceBlob || undefined, source: fallbackSource || undefined, volume: volumeLevel, discId });
+    await playSound({ blob: sourceBlob || undefined, source: fallbackSource || undefined, volume: volumeLevel, discId, assetKey });
     hasActiveAudioSession = true;
+    consecutiveStreamErrors = 0;
     await persistState();
     broadcastState();
     return true;
@@ -879,29 +749,19 @@ async function handleControl(command, value) {
 
 async function handlePlayDisc(message) {
     const { discId } = message;
-    console.log(`[MinecraftJukebox] handlePlayDisc called for: ${discId}`);
-    console.log(`[MinecraftJukebox] hasDiscLibrary(): ${hasDiscLibrary()}`);
-    console.log(`[MinecraftJukebox] blobAssetLibrary.size: ${blobAssetLibrary.size}`);
-    console.log(`[MinecraftJukebox] minecraftAssetState.discIndex.size: ${minecraftAssetState.discIndex.size}`);
-    
     if (!discId) return;
 
     const providedUrl = typeof message.objectUrl === 'string' ? message.objectUrl : null;
     const resolvedKey = resolveAssetKey(message.assetKey ?? discId) || (providedUrl ? toAssetKey(discId) : null);
     const streamFallbacks = Array.isArray(message.streamFallbacks) ? message.streamFallbacks : [];
     const isStream = Boolean(message.isStream);
-    
-    console.log(`[MinecraftJukebox] providedUrl: ${providedUrl}`);
-    console.log(`[MinecraftJukebox] resolvedKey: ${resolvedKey}`);
 
     if (!hasDiscLibrary() && !providedUrl) {
-        console.log(`[MinecraftJukebox] No disc library and no provided URL`);
         notifyAssetsIssue('Select your Minecraft assets folder before playing.', { level: 'warning', discId });
         return;
     }
 
     if (!resolvedKey && !providedUrl) {
-        console.log(`[MinecraftJukebox] No resolved key and no provided URL`);
         notifyAssetsIssue(`No local audio found for ${discId}.`, { level: 'error', discId });
         return;
     }
@@ -913,15 +773,12 @@ async function handlePlayDisc(message) {
         streamFallbacks,
         isStream
     });
-    console.log(`[MinecraftJukebox] Sanitized track:`, track);
-    
     if (!track) {
         notifyAssetsIssue(`Unable to queue ${discId}.`, { level: 'error', discId });
         return;
     }
 
     const pushHistory = Boolean(playbackState.currentTrack && playbackState.currentTrack.discId !== discId);
-    console.log(`[MinecraftJukebox] Calling playTrack with pushHistory: ${pushHistory}`);
     await playTrack(track, { pushCurrentToHistory: pushHistory });
 }
 
@@ -1038,6 +895,8 @@ function handlePlaybackStopped(message) {
     const reason = message.reason || 'stopped';
 
     if (reason === 'error') {
+        consecutiveStreamErrors += 1;
+
         const current = playbackState.currentTrack;
         if (current && isRemoteSource(current.objectUrl)) {
             const remaining = Array.isArray(current.streamFallbacks) ? current.streamFallbacks.slice() : [];
@@ -1052,22 +911,35 @@ function handlePlaybackStopped(message) {
                 if (remaining.length) {
                     playbackState.currentTrack.streamFallbacks = remaining;
                 }
-                console.warn('[MinecraftJukebox] Retrying stream for', current.discId, 'with fallback source');
                 playTrack(playbackState.currentTrack, { pushCurrentToHistory: false }).catch(() => {});
                 return;
             }
             notifyAssetsIssue('Streaming is unavailable right now.', { level: 'warning', discId: current.discId });
         }
-        advanceQueue({ shouldStopCurrent: false }).catch(() => {});
+
+        if (consecutiveStreamErrors >= MAX_CONSECUTIVE_ERRORS) {
+            consecutiveStreamErrors = 0;
+            notifyAssetsIssue('Multiple tracks failed to play. Check your connection or try local assets.', { level: 'warning' });
+            playbackState.progress = { currentTime: 0, duration: 0, isPlaying: false };
+            hasActiveAudioSession = false;
+            persistState().then(() => broadcastState()).catch(() => {});
+            return;
+        }
+
+        setTimeout(() => {
+            advanceQueue({ shouldStopCurrent: false }).catch(() => {});
+        }, ERROR_ADVANCE_DELAY_MS);
         return;
     }
 
     if (reason === 'ended') {
+        consecutiveStreamErrors = 0;
         advanceQueue({ shouldStopCurrent: false }).catch(() => {});
         return;
     }
 
     if (reason === 'stopped') {
+        consecutiveStreamErrors = 0;
         playbackState.progress = {
             currentTime: 0,
             duration: playbackState.progress.duration,
@@ -1165,7 +1037,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                         bytes[i] = binaryString.charCodeAt(i);
                     }
                     blob = new Blob([bytes], { type: mimeType });
-                    console.log(`[MinecraftJukebox] Reconstructed blob for key: ${key}, size: ${blob.size} bytes, type: ${blob.type}`);
                 } catch (error) {
                     console.error('[MinecraftJukebox] Failed to decode base64 for key:', key, error);
                     safeSendResponse({ ok: false });
@@ -1191,8 +1062,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 }
                 if (expectedBlobKeys.size === 0) {
                     finishBlobUploadWait();
-                    // Verify storage
-                    verifyBlobStorage().catch(() => {});
                 } else if (expectedBlobKeys.size > 0) {
                     console.warn('[MinecraftJukebox] Missing uploaded disc blobs for keys:', Array.from(expectedBlobKeys));
                     expectedBlobKeys.clear();
