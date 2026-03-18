@@ -630,7 +630,6 @@ async function playTrack(track, { pushCurrentToHistory = true } = {}) {
 
         await playSound({ source: streamSource, volume: volumeLevel, discId });
         hasActiveAudioSession = true;
-        consecutiveStreamErrors = 0;
         await persistState();
         broadcastState();
         return true;
@@ -681,7 +680,6 @@ async function playTrack(track, { pushCurrentToHistory = true } = {}) {
 
     await playSound({ blob: sourceBlob || undefined, source: fallbackSource || undefined, volume: volumeLevel, discId, assetKey });
     hasActiveAudioSession = true;
-    consecutiveStreamErrors = 0;
     await persistState();
     broadcastState();
     return true;
@@ -694,14 +692,25 @@ async function advanceQueue({ shouldStopCurrent = false } = {}) {
         playbackState.history.push(previousTrack);
     }
 
-    let nextTrack = playbackState.queue.shift();
+    while (playbackState.queue.length) {
+        const candidate = playbackState.queue[0];
 
-    while (nextTrack) {
-        const played = await playTrack(nextTrack, { pushCurrentToHistory: false });
+        // Drop structurally invalid tracks (corrupt/missing data).
+        if (!sanitizeTrack(candidate)) {
+            playbackState.queue.shift();
+            continue;
+        }
+
+        // Valid track — attempt playback.
+        playbackState.queue.shift();
+        const played = await playTrack(candidate, { pushCurrentToHistory: false });
         if (played) {
             return;
         }
-        nextTrack = playbackState.queue.shift();
+
+        // Valid track but audio source unavailable (e.g. lost file handles).
+        // Stop advancing to preserve the remaining queue.
+        break;
     }
 
     playbackState.currentTrack = null;

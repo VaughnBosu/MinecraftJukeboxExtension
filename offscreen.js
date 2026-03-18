@@ -10,7 +10,6 @@ let audioContext = null;
 let gainNode = null;
 let sourceNode = null;
 let currentBlobUrl = null;
-let currentIsRemoteStream = false;
 
 function loadBlobFromCache(key) {
     return new Promise((resolve) => {
@@ -216,12 +215,13 @@ async function playAudio({ source, blob, base64Data, mimeType, volume = 1, discI
     }
 
     const audio = new Audio();
-    if (!isRemote) {
+    if (isRemote) {
+        audio.crossOrigin = 'anonymous';
+    } else {
         audio.preload = 'auto';
     }
     audio.src = resolvedSource;
     currentVolume = clampVolume(volume);
-    currentIsRemoteStream = isRemote;
     audio.loop = false;
     audio.currentTime = 0;
 
@@ -244,16 +244,12 @@ async function playAudio({ source, blob, base64Data, mimeType, volume = 1, discI
     currentlyPlayingAudio = audio;
     currentDiscId = discId || currentDiscId;
 
-    if (isRemote) {
-        audio.volume = Math.min(Math.max(currentVolume, 0), 1);
-    } else {
-        ensureAudioGraph(audio);
-        if (gainNode) {
-            gainNode.gain.value = currentVolume;
-        }
-        if (audioContext && audioContext.state === 'suspended') {
-            audioContext.resume().catch(() => {});
-        }
+    ensureAudioGraph(audio);
+    if (gainNode) {
+        gainNode.gain.value = currentVolume;
+    }
+    if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume().catch(() => {});
     }
 
     sendProgressUpdate();
@@ -275,9 +271,7 @@ function setVolume(volume) {
         }
         return;
     }
-    if (currentIsRemoteStream) {
-        audio.volume = Math.min(Math.max(currentVolume, 0), 1);
-    } else if (gainNode) {
+    if (gainNode) {
         gainNode.gain.value = currentVolume;
     } else {
         audio.volume = Math.min(Math.max(currentVolume, 0), 1);

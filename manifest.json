@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "The Jukebox – Minecraft Music Player",
-  "version": "2026.3.6",
-  "description": "Get a Minecraft jukebox in your browser!",
+  "version": "2026.3.18",
+  "description": "Get a Minecraft Jukebox in your browser!",
   "permissions": [
       "offscreen",
       "storage"
