@@ -319,6 +319,14 @@ body.scale-large {
     padding: calc(12px * var(--scale-factor));
 }
 
+.footer-link-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: calc(8px * var(--scale-factor));
+    flex-wrap: wrap;
+}
+
 .footer-btn {
     font-family: 'Minecraft';
     font-size: calc(13px * var(--scale-factor));
@@ -326,7 +334,16 @@ body.scale-large {
     border-radius: calc(5px * var(--scale-factor));
     text-decoration: none;
     color: #fff;
+    text-align: center;
     transition: background-color 0.2s ease;
+}
+
+.sponsor-btn {
+    background-color: #2d8f2d;
+}
+
+.sponsor-btn:hover {
+    background-color: #39a139;
 }
 
 .review-btn {

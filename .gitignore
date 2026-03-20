@@ -3,6 +3,7 @@
 .LSOverride
 .vscode
 .cursor
+cws.toml
 
 Icon?
 
