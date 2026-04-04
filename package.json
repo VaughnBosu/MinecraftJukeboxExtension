@@ -1,0 +1,13 @@
+{
+  "name": "minecraft-jukebox-extension",
+  "private": true,
+  "scripts": {
+    "pw:install": "playwright install chromium",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "PW_HEADFUL=1 playwright test",
+    "test:e2e:live": "playwright test tests/e2e/live-urls.spec.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.54.1"
+  }
+}

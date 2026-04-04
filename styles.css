@@ -371,16 +371,6 @@ body.scale-large {
     background-color: #ffb733;
 }
 
-.affiliate-note {
-    font-family: 'Minecraft';
-    font-size: calc(11px * var(--scale-factor));
-    color: rgba(255, 255, 255, 0.6);
-    margin: 0;
-    margin-top: calc(2px * var(--scale-factor));
-    text-align: center;
-}
-
-
 .now-playing {
     font-family: 'Minecraft';
     font-size: calc(24px * var(--scale-factor));
@@ -390,12 +380,6 @@ body.scale-large {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-}
-
-.note{
-    font-family: 'Minecraft';
-    font-size: calc(20px * var(--scale-factor));
-    text-align: center;
 }
 
 .disc {
@@ -411,10 +395,18 @@ body.scale-large {
     background-position: center;
     position: relative;
     flex: 0 0 auto;
+    border: none;
+    padding: 0;
+    background-color: transparent;
 }
 
 .disc:hover {
     background-color: rgba(54, 44, 44, 0.12);
+}
+
+.disc:focus-visible {
+    outline: 2px solid #f9a602;
+    outline-offset: 3px;
 }
 
 .disc.disabled {
@@ -424,7 +416,7 @@ body.scale-large {
 }
 
 .disc:hover:after {
-    content: attr(data-disc-id);
+    content: attr(data-disc-label);
     position: absolute;
     top: 50%;
     left: 50%;
@@ -446,29 +438,6 @@ body.scale-large {
 .hero-disc:hover:after {
     display: none;
 }
-
-/* Background Images */
-.disc-13 { background-image: url('assets/images/13.webp'); }
-.disc-cat { background-image: url('assets/images/cat.webp'); }
-.disc-blocks { background-image: url('assets/images/blocks.webp'); }
-.disc-chirp { background-image: url('assets/images/chirp.webp'); }
-.disc-far { background-image: url('assets/images/far.webp'); }
-.disc-mall { background-image: url('assets/images/mall.webp'); }
-.disc-mellohi { background-image: url('assets/images/mellohi.webp'); }
-.disc-stal { background-image: url('assets/images/stal.webp'); }
-.disc-strad { background-image: url('assets/images/strad.webp'); }
-.disc-ward { background-image: url('assets/images/ward.webp'); }
-.disc-11 { background-image: url('assets/images/11.webp'); }
-.disc-wait { background-image: url('assets/images/wait.webp'); }
-.disc-otherside { background-image: url('assets/images/otherside.webp'); }
-.disc-5 { background-image: url('assets/images/5.webp'); }
-.disc-pigstep { background-image: url('assets/images/pigstep.webp'); }
-.disc-relic { background-image: url('assets/images/relic.webp'); }
-.disc-creator { background-image: url('assets/images/creator.webp'); }
-.disc-creator-music-box { background-image: url('assets/images/creator(music-box).webp'); }
-.disc-precipice { background-image: url('assets/images/precipice.webp'); }
-.disc-tears { background-image: url('assets/images/tears.webp'); }
-.disc-lava-chicken { background-image: url('assets/images/lava-chicken.webp'); }
 
 .playback-bar {
     display: flex;

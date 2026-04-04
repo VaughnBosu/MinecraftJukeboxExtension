@@ -1,61 +1,45 @@
 # The Jukebox — Minecraft Music Player
-
-A [Manifest V3](https://developer.chrome.com/docs/extensions/mv3/intro/) browser extension that brings a Minecraft-style jukebox into Chrome: click discs, queue tracks, shuffle ambient music, and optionally play **your own** Java Edition disc audio from local game files.
+A chrome extension that adds a Minecraft Jukebox straight into your browser! Click discs, queue tracks, shuffle ambient music, and optionally play your own Java Edition disc audio from local game files.
 
 *Not affiliated with Mojang Studios or Microsoft.*
 
-## Features
+## Background
+In Minecraft, the jukebox is one of the most iconic blocks — drop in a music disc and your world comes alive with C418's ambient masterpieces. But what if you didn't have to be in-game to enjoy them? This extension brings that experience to your browser. Browse over 20 music discs, queue up tracks, shuffle ambient mixes, and even unlock your full local disc library by pointing the extension at your Minecraft Java Edition assets folder.
 
-- **Jukebox mode** — Tap the central jukebox for a shuffled mix of Minecraft-style tracks (streamed from public archives).
-- **Music discs** — Browse every disc in a collapsible “Music Discs” panel; left-click to play, right-click or Shift-click to queue.
-- **Streaming + local audio** — Some discs use remote sources where available; others can be unlocked by pointing the extension at your **Minecraft Java Edition `assets`** folder (see [Local Minecraft audio](#local-minecraft-audio)).
-- **Playback** — Play/pause, seek, skip, queue list, clear queue, volume (up to 300%), and **popup size** (small / medium / large).
-- **Persistent library** — Selected assets and disc blobs are stored locally (extension storage + IndexedDB) so you don’t have to re-import every session.
+## How does it work?
+1. Click the jukebox icon in your browser toolbar to open the popup.
+2. Tap the central jukebox button for a **shuffled mix** of Minecraft ambient tracks (streamed from public archives).
+3. Expand the **Music Discs** panel to browse every disc — left-click to play, right-click or Shift-click to queue.
+4. Use playback controls: play/pause, seek, skip, rewind/forward 10 seconds, and volume up to **300%**.
+5. Optionally point the extension at your **Minecraft Java Edition `assets`** folder to unlock grayed-out discs that can't be streamed.
 
-## Requirements
+## Supported Discs
+Each disc plays its authentic Minecraft track:
 
-- **Google Chrome** (or another Chromium browser that supports Manifest V3 extensions).
-- For **full disc support**: **Minecraft: Java Edition** installed and the ability to select its `assets` folder (optional but recommended for grayed-out / locally sourced discs).
+**13** · **Cat** · **Blocks** · **Chirp** · **Far** · **Mall** · **Mellohi** · **Stal** · **Strad** · **Ward** · **Wait** · **11** · **5** · **Otherside** · **Pigstep** · **Relic** · **Creator** · **Creator (Music Box)** · **Precipice** · **Tears** · **Lava Chicken**
 
-## Install (development)
+Plus **The Jukebox** — a shuffled ambient mix of all tracks.
 
-1. Clone or download this repository.
-2. Open Chrome → **Extensions** (`chrome://extensions`).
-3. Enable **Developer mode**.
-4. Click **Load unpacked** and choose the project folder (the directory that contains `manifest.json`).
+## Local Minecraft Audio
+To use disc audio from your own game install, open the popup, expand **Music Discs**, and use **Use Local Minecraft Audio** to select your `assets` folder:
 
-The extension name and version are defined in `manifest.json` (`name`, `version`).
+- **Windows:** `%AppData%\.minecraft\assets`
+- **macOS:** `~/Library/Application Support/minecraft/assets`
 
-## Local Minecraft audio
 
-To use disc audio from your own game install (and to follow license-friendly behavior for tracks the extension cannot bundle), open the popup, expand **Music Discs**, and use **Use Local Minecraft Audio** to select your **`assets`** folder:
+## Development
 
-- **Windows:** e.g. `%AppData%\.minecraft\assets`
-- **macOS:** e.g. `~/Library/Application Support/minecraft/assets`
+### Installation
+```bash
+git clone https://github.com/null3000/MinecraftJukeboxExtension.git
+```
 
-Detailed steps and troubleshooting are in **`disc-help.html`** (also linked from the UI as **Info** when local audio is available). Platform-specific guides: `windowsinstructions.html`, `macOSinstructions.html`.
+### Running the Extension
+No build step required — load the unpacked extension directly:
+- **Chrome**: `chrome://extensions` → Enable **Developer mode** → **Load unpacked** → select project root
 
-## Project layout
 
-| Path | Role |
-|------|------|
-| `manifest.json` | Extension metadata, permissions, service worker, web-accessible help pages |
-| `popup.html` / `app.js` / `styles.css` | Popup UI and playback logic |
-| `background.js` | Service worker: messages, asset indexing, IndexedDB blobs |
-| `offscreen.html` / `offscreen.js` | Offscreen document for audio playback |
-| `shared.js` | Shared helpers (e.g. disc id normalization) |
-| `assets/` | Icons, images, fonts |
-| `disc-help.html`, `*instructions.html` | Help content for local audio setup |
+## Contributing
+Like the project? Please consider contributing to this project, lots of improvements and optimizations can be made.
 
-## Permissions
-
-- **`offscreen`** — Play audio in an offscreen document (required for reliable playback in MV3).
-- **`storage`** — Persist UI preferences and indexed disc metadata.
-
-## License
-
-This project is licensed under [Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)](https://creativecommons.org/licenses/by-nc/4.0/) — see [LICENSE](LICENSE).
-
-**In short:** non-commercial use only; if you share or build on this work, you must **give appropriate credit** to the author. Read the full legal terms in `LICENSE`.
-
-Copyright (c) 2026 Vaughn Bosu.
+[![Available in the Chrome Web Store](https://user-images.githubusercontent.com/19192015/132961666-64cf372a-ad35-47ad-b378-4de4b4a07d6d.png)](https://chromewebstore.google.com/detail/the-jukebox-minecraft-mus/mbibfcflbmlbcbnejgalgeijlpnjjgjc)
