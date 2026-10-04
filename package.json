@@ -3,9 +3,9 @@
   "private": true,
   "scripts": {
     "pw:install": "playwright install chromium",
-    "test:e2e": "playwright test",
-    "test:e2e:headed": "PW_HEADFUL=1 playwright test",
-    "test:e2e:live": "playwright test tests/e2e/live-urls.spec.js"
+    "test:e2e": "playwright test --project=ui",
+    "test:e2e:headed": "PW_HEADFUL=1 playwright test --project=ui",
+    "test:e2e:live": "playwright test --project=live"
   },
   "devDependencies": {
     "@playwright/test": "^1.54.1"

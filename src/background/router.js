@@ -1,6 +1,17 @@
 (() => {
     const bg = globalThis.MinecraftJukeboxBackground;
 
+    const blobLibraryWaitTypes = new Set([
+        'playDisc',
+        'queueDisc',
+        'requestMinecraftAssets'
+    ]);
+    const playbackCommandTypes = new Set([
+        'playDisc', 'queueDisc', 'removeFromQueue', 'reorderQueue',
+        'skipNext', 'skipPrevious', 'clearQueue', 'control', 'setVolume'
+    ]);
+    let playbackCommands = Promise.resolve();
+
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const expectsResponse = bg.messageTypesExpectingResponse.has(message?.type);
         let didSendResponse = false;
@@ -18,24 +29,15 @@
             }
         };
 
-        (async () => {
+        const handleMessage = async () => {
             await bg.stateReady;
             await bg.discLibraryReady;
 
-            const skipBlobWaitTypes = new Set([
-                'minecraftAssetsUploadedIndex',
-                'minecraftAssetBlob',
-                'minecraftAssetsUploadComplete'
-            ]);
-
-            if (!skipBlobWaitTypes.has(message?.type)) {
+            if (blobLibraryWaitTypes.has(message?.type)) {
                 await bg.blobLibraryReady.catch(() => {});
             }
 
             switch (message?.type) {
-                case 'minecraftAssetsSelected':
-                    bg.setDiscLibrary(message.assets);
-                    break;
                 case 'minecraftAssetsUploadedIndex':
                     safeSendResponse(await bg.handleUploadedIndex(message));
                     return;
@@ -47,9 +49,6 @@
                     return;
                 case 'requestMinecraftAssets':
                     safeSendResponse(bg.getAssetsResponse());
-                    return;
-                case 'requestDiscBlob':
-                    safeSendResponse(await bg.getDiscBlobResponse(message));
                     return;
                 case 'playDisc':
                     await bg.handlePlayDisc(message);
@@ -90,7 +89,14 @@
                 default:
                     break;
             }
-        })().catch(error => {
+        };
+
+        // Multiple player views can issue commands while audio is still being
+        // initialized. Preserve their order without delaying progress updates.
+        const isPlaybackCommand = playbackCommandTypes.has(message?.type);
+        const operation = isPlaybackCommand ? playbackCommands.then(handleMessage) : handleMessage();
+        if (isPlaybackCommand) playbackCommands = operation.catch(() => {});
+        operation.catch(error => {
             console.error('[MinecraftJukebox] Failed to process message type:', message?.type, error);
             if (expectsResponse && !didSendResponse) {
                 safeSendResponse({ ok: false });
@@ -98,9 +104,5 @@
         });
 
         return expectsResponse;
-    });
-
-    chrome.runtime.onInstalled.addListener(() => {
-        bg.persistState();
     });
 })();

@@ -1,5 +1,6 @@
 const { test, expect } = require('@playwright/test');
 const {
+    closeExtension,
     getProgressValue,
     getQueueTitles,
     launchExtension,
@@ -25,7 +26,7 @@ async function expandDiscMenu(page) {
 
 test.describe('Popup Playback', () => {
     test('jukebox starts playback and populates the queue', async () => {
-        const { context, extensionId } = await launchExtension();
+        const { context, extensionId, userDataDir } = await launchExtension();
 
         try {
             const page = await openPopupPage(context, extensionId);
@@ -39,17 +40,18 @@ test.describe('Popup Playback', () => {
 
             await waitForQueueLength(page, 1);
             await waitForProgressToAdvance(page, { minimumDelta: 1 });
+            await expect(page.locator('#duration-time')).toHaveText('1:30');
 
             const stored = await readStorage(page, ['playbackState']);
             expect(stored.playbackState.currentTrack).toBeTruthy();
             expect(stored.playbackState.queue.length).toBeGreaterThan(0);
         } finally {
-            await context.close();
+            await closeExtension({ context, userDataDir });
         }
     });
 
     test('stream discs can be queued, skipped, reordered, and cleared', async () => {
-        const { context, extensionId } = await launchExtension();
+        const { context, extensionId, userDataDir } = await launchExtension();
 
         try {
             const page = await openPopupPage(context, extensionId);
@@ -78,12 +80,12 @@ test.describe('Popup Playback', () => {
             await page.locator('#clear-queue-btn').click();
             await expect(page.locator('.empty-queue')).toHaveText('Queue is empty');
         } finally {
-            await context.close();
+            await closeExtension({ context, userDataDir });
         }
     });
 
     test('volume mute and seek controls update playback state', async () => {
-        const { context, extensionId } = await launchExtension();
+        const { context, extensionId, userDataDir } = await launchExtension();
 
         try {
             const page = await openPopupPage(context, extensionId);
@@ -92,6 +94,7 @@ test.describe('Popup Playback', () => {
 
             await waitForNowPlaying(page, 'blocks');
             await waitForProgressToAdvance(page, { minimumDelta: 0.5 });
+            await expect(page.locator('#duration-time')).toHaveText('1:30');
 
             await setRangeValue(page, '#volume-slider', 150);
             await expect.poll(async () => {
@@ -119,7 +122,29 @@ test.describe('Popup Playback', () => {
             await page.locator('#rewind-btn').click();
             await expect.poll(() => getProgressValue(page)).toBeLessThan(beforeForward + 4);
         } finally {
-            await context.close();
+            await closeExtension({ context, userDataDir });
+        }
+    });
+
+    test('a failed stream does not interrupt a song selected during error recovery', async () => {
+        const launch = await launchExtension();
+        launch.audioFixture.failSources.add('Blocks.mp3');
+        try {
+            const page = await openPopupPage(launch.context, launch.extensionId);
+            await expandDiscMenu(page);
+            await page.locator('[data-disc-id="blocks"]').click();
+            await expect(page.locator('#assets-status')).toContainText('Streaming is unavailable');
+
+            await page.locator('[data-disc-id="chirp"]').click();
+            await waitForNowPlaying(page, 'chirp');
+            await waitForProgressToAdvance(page, { minimumDelta: 1 });
+            await expect(page.locator('#duration-time')).toHaveText('1:30');
+            await expect(page.locator('#play-pause-btn')).toBeEnabled();
+            const stored = await readStorage(page, ['playbackState']);
+            expect(stored.playbackState.currentTrack?.discId).toBe('chirp');
+            expect(launch.audioFixture.requests.some(request => request.failed)).toBe(true);
+        } finally {
+            await closeExtension(launch);
         }
     });
 });

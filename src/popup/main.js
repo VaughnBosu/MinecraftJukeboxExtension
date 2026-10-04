@@ -6,7 +6,8 @@
     const SCALE_OPTIONS = ['small', 'medium', 'large'];
     const SCALE_CLASSES = SCALE_OPTIONS.map(option => `scale-${option}`);
     const DEFAULT_SCALE = 'small';
-    const PING_ENDPOINT = 'https://lupyhlznsiokxpeqftpg.supabase.co/functions/v1/ping';
+    const isPlayerWindow = new URLSearchParams(location.search).get('window') === '1';
+    document.body.classList.toggle('player-window', isPlayerWindow);
 
     const dom = {
         nowPlayingLabel: document.getElementById('now-playing'),
@@ -21,69 +22,34 @@
         durationLabel: document.getElementById('duration-time'),
         queueList: document.getElementById('queue-list'),
         scaleSelect: document.getElementById('ui-scale-select'),
+        popoutBtn: document.getElementById('popout-btn'),
+        songsMenuToggle: document.getElementById('songs-menu-toggle'),
+        songsMenuPanel: document.getElementById('songs-menu-panel'),
         volumeSlider: document.getElementById('volume-slider'),
         volumeIcon: document.querySelector('.volume-icon'),
         selectAssetsBtn: document.getElementById('select-assets-btn'),
         assetsInfoBtn: document.querySelector('.info-btn'),
-        discPanelActions: document.querySelector('.disc-panel-actions'),
         assetsStatusLabel: document.getElementById('assets-status'),
         assetsStatusRow: document.querySelector('.assets-status-row'),
         assetsDirectoryInput: document.getElementById('assets-directory-input'),
         discMenuToggle: document.getElementById('disc-menu-toggle'),
         discMenuPanel: document.getElementById('disc-menu-panel'),
         discsContainer: document.getElementById('discs'),
-        heroDisc: document.querySelector('.hero-disc'),
         getDiscElements: () => Array.from(document.querySelectorAll('.disc'))
     };
-
-    let resizeFrameId = null;
-
-    function resizePopupToContent() {
-        if (resizeFrameId !== null) {
-            cancelAnimationFrame(resizeFrameId);
-        }
-
-        resizeFrameId = requestAnimationFrame(() => {
-            resizeFrameId = null;
-
-            const root = document.documentElement;
-            const body = document.body;
-            const bodyStyles = window.getComputedStyle(body);
-            const verticalPadding = parseInt(bodyStyles.paddingTop, 10) + parseInt(bodyStyles.paddingBottom, 10);
-
-            const contentHeight = Math.max(root.scrollHeight, body.scrollHeight) + verticalPadding;
-            const contentWidth = Math.max(root.scrollWidth, body.scrollWidth);
-            const targetHeight = Math.min(contentHeight, 600);
-            const targetWidth = Math.min(Math.max(Math.ceil(contentWidth), 320), 800);
-            const widthDelta = window.outerWidth - window.innerWidth;
-            const heightDelta = window.outerHeight - window.innerHeight;
-
-            window.resizeTo(
-                Math.ceil(targetWidth + widthDelta),
-                Math.ceil(targetHeight + heightDelta)
-            );
-        });
-    }
 
     function applyScalePreference(scale = DEFAULT_SCALE, { persist = false } = {}) {
         const normalized = SCALE_OPTIONS.includes(scale) ? scale : DEFAULT_SCALE;
         document.body.classList.remove(...SCALE_CLASSES);
         document.body.classList.add(`scale-${normalized}`);
+        dom.scaleSelect.value = normalized;
 
-        if (dom.scaleSelect && dom.scaleSelect.value !== normalized) {
-            dom.scaleSelect.value = normalized;
-        }
-
-        if (persist && chrome?.storage?.local?.set) {
+        if (persist) {
             chrome.storage.local.set({ uiScale: normalized }).catch(() => {});
         }
-
-        resizePopupToContent();
     }
 
     function setDiscMenuVisibility(expanded, { persist = true } = {}) {
-        if (!dom.discMenuToggle || !dom.discMenuPanel) return;
-
         if (expanded) {
             dom.discMenuPanel.removeAttribute('hidden');
             dom.discMenuPanel.classList.add('expanded');
@@ -95,11 +61,9 @@
 
         dom.discMenuToggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
 
-        if (persist && chrome?.storage?.local?.set) {
+        if (persist) {
             chrome.storage.local.set({ discMenuExpanded: Boolean(expanded) }).catch(() => {});
         }
-
-        resizePopupToContent();
     }
 
     function createDiscButton(entry) {
@@ -110,62 +74,76 @@
         button.dataset.discLabel = entry.label;
         button.setAttribute('aria-label', `Play ${entry.label}`);
         button.title = entry.label;
-        button.style.backgroundImage = `url("${entry.imagePath}")`;
+        const artwork = document.createElement('img');
+        artwork.className = 'disc-image';
+        artwork.src = entry.imagePath;
+        artwork.alt = '';
+        artwork.width = 64;
+        artwork.height = 64;
+        artwork.draggable = false;
+        button.appendChild(artwork);
         return button;
     }
 
-    function renderDiscGrid() {
-        if (!dom.discsContainer) return;
-        const buttons = catalog.getPopupDiscs().map(createDiscButton);
-        dom.discsContainer.replaceChildren(...buttons);
-
-        if (dom.heroDisc) {
-            dom.heroDisc.dataset.discLabel = 'The Jukebox';
-            dom.heroDisc.title = 'The Jukebox';
+    function setSongsMenuVisibility(expanded, { persist = true } = {}) {
+        dom.songsMenuPanel.hidden = !expanded;
+        dom.songsMenuToggle.setAttribute('aria-expanded', String(expanded));
+        if (persist) {
+            chrome.storage.local.set({ songsMenuExpanded: expanded }).catch(() => {});
         }
     }
 
-    function pingOnPopupOpen() {
-        if (!PING_ENDPOINT) return;
-        fetch(PING_ENDPOINT, { method: 'GET', cache: 'no-store' }).catch(() => {});
-    }
-
     function bindUiEvents() {
-        dom.scaleSelect?.addEventListener('change', event => {
+        dom.scaleSelect.addEventListener('change', event => {
             applyScalePreference(event.target.value, { persist: true });
         });
 
-        dom.discMenuToggle?.addEventListener('click', () => {
+        dom.discMenuToggle.addEventListener('click', () => {
             const isExpanded = dom.discMenuToggle.getAttribute('aria-expanded') === 'true';
             setDiscMenuVisibility(!isExpanded);
+        });
+
+        dom.songsMenuToggle.addEventListener('click', () => {
+            setSongsMenuVisibility(dom.songsMenuToggle.getAttribute('aria-expanded') !== 'true');
+        });
+
+        dom.popoutBtn.hidden = isPlayerWindow;
+        dom.popoutBtn.addEventListener('click', async () => {
+            dom.popoutBtn.disabled = true;
+            try {
+                const result = await chrome.runtime.sendMessage({ type: 'openPlayerWindow', screen: {
+                    left: screen.availLeft, top: screen.availTop,
+                    width: screen.availWidth, height: screen.availHeight
+                } });
+                if (!result?.ok) throw new Error('Unable to open player');
+            } catch (error) {
+                assets.setAssetsStatus('Could not open the player window. Please try again.', 'error');
+            } finally {
+                dom.popoutBtn.disabled = false;
+            }
         });
 
         document.addEventListener('click', player.handleDiscClick);
         document.addEventListener('contextmenu', player.handleDiscContextMenu);
     }
 
-    function hydrateUiPreferences() {
-        setDiscMenuVisibility(false, { persist: false });
-        applyScalePreference(DEFAULT_SCALE);
+    function initialize() {
+        dom.discsContainer.replaceChildren(...catalog.getPopupDiscs().map(createDiscButton));
+        const popupResize = globalThis.MinecraftJukeboxResize.initialize({ scaleSelect: dom.scaleSelect, isPlayerWindow });
 
-        if (!chrome?.storage?.local?.get) return;
-        chrome.storage.local.get(['discMenuExpanded', 'uiScale'], data => {
+        chrome.storage.local.get(['discMenuExpanded', 'songsMenuExpanded', 'uiScale', 'popupSize'], data => {
             if (typeof data?.discMenuExpanded !== 'undefined') {
                 setDiscMenuVisibility(Boolean(data.discMenuExpanded), { persist: false });
             }
             if (data?.uiScale) {
                 applyScalePreference(data.uiScale, { persist: false });
             }
+            setSongsMenuVisibility(Boolean(data?.songsMenuExpanded), { persist: false });
+            popupResize.restore(data?.popupSize);
         });
-    }
-
-    function initialize() {
-        renderDiscGrid();
-        hydrateUiPreferences();
 
         assets.initialize({
             dom,
-            onResize: resizePopupToContent,
             onLibraryReady: ready => {
                 if (ready) {
                     player.flushPendingDiscActions();
@@ -173,10 +151,17 @@
             }
         });
 
-        player.initialize({
-            dom,
-            assets,
-            onResize: resizePopupToContent
+        player.initialize({ dom, assets });
+
+        globalThis.MinecraftJukeboxSongs.initialize({
+            container: document.getElementById('song-list'),
+            searchInput: document.getElementById('song-search'),
+            countLabel: document.getElementById('song-count'),
+            emptyLabel: document.getElementById('song-empty'),
+            pagination: document.getElementById('song-pagination'),
+            pageRange: document.getElementById('song-page-range'),
+            previousPage: document.getElementById('song-page-prev'),
+            nextPage: document.getElementById('song-page-next')
         });
 
         bindUiEvents();
@@ -187,11 +172,6 @@
         });
 
         assets.requestAssetsFromBackground();
-
-        window.addEventListener('load', () => {
-            pingOnPopupOpen();
-            resizePopupToContent();
-        });
     }
 
     initialize();

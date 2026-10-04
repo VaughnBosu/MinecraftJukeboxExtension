@@ -4,33 +4,8 @@
   <meta charset="UTF-8">
   <title>Windows Setup — Use Local Minecraft Audio</title>
   <link rel="stylesheet" href="disc-help.css">
-  <style>
-    /* Page-specific helpers to complement disc-help.css */
-    .steps { counter-reset: step; list-style: none; padding-left: 0; }
-    .steps li { position: relative; margin: 0 0 1.1em; padding-left: 2.3em; }
-    .steps li::before {
-      counter-increment: step;
-      content: counter(step);
-      position: absolute; left: 0; top: 0.1em;
-      width: 1.7em; height: 1.7em; line-height: 1.7em;
-      text-align: center; border-radius: 8px;
-      background: #2a2a2a; color: #ffd166; font-weight: 700;
-      box-shadow: 0 2px 8px rgba(0,0,0,.35);
-    }
-    figure { margin: 0.6em 0 1.2em; }
-    .step-img { width: 100%; height: auto; border-radius: 10px; box-shadow: 0 8px 22px rgba(0,0,0,.35); }
-    figcaption { opacity: .85; font-size: 0.95em; margin-top: 0.5em; }
-  </style>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="dark light">
-  <meta name="description" content="Set up local Minecraft audio on Windows to unlock every disc in the Minecraft Jukebox extension.">
-  <link rel="icon" href="assets/icon/jukebox.png">
-  <link rel="apple-touch-icon" href="assets/icon/jukebox.png">
-  <meta name="theme-color" content="#0d0d0d">
-  <meta name="robots" content="noindex">
-  <meta name="format-detection" content="telephone=no">
-  <meta http-equiv="x-ua-compatible" content="IE=edge">
-  <meta name="referrer" content="no-referrer">
+  <link rel="icon" href="/assets/icon/jukebox.png">
 </head>
 <body>
   <main>
@@ -82,7 +57,7 @@
       <h2>Troubleshooting</h2>
       <ul>
         <li>If the folder picker hides AppData, turn on <strong>View → Hidden items</strong> in File Explorer.</li>
-        <li>Windows may prompt for access to the <code>objects</code> folder and a JSON file in <code>indexes</code>. Allow both.</li>
+        <li>Chrome asks “Upload N files to this site?” — click <strong>Upload</strong> to confirm. It can take a few seconds to appear because the <code>assets</code> folder holds thousands of files.</li>
         <li>If nothing loads, double-check that Minecraft Java Edition is installed on this PC.</li>
       </ul>
     </section>

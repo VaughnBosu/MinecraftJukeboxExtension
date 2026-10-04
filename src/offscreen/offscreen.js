@@ -1,11 +1,7 @@
 (() => {
     const shared = globalThis.MinecraftJukeboxShared;
-    const { clampVolume, isRemoteSource, base64ToBlob } = shared;
+    const { clampVolume, isRemoteSource, readBlobFromCache, sendMessageSafe } = shared;
 
-    const MAX_VOLUME = 3;
-    const BLOB_DB_NAME = 'minecraftJukeboxAssets';
-    const BLOB_DB_VERSION = 1;
-    const BLOB_STORE_NAME = 'discBlobs';
     const PROGRESS_THROTTLE_MS = 1000;
 
     let currentlyPlayingAudio = null;
@@ -17,48 +13,9 @@
     let currentBlobUrl = null;
     let lastProgressSentAt = 0;
 
-    function loadBlobFromCache(key) {
-        return new Promise(resolve => {
-            try {
-                const request = indexedDB.open(BLOB_DB_NAME, BLOB_DB_VERSION);
-                request.onupgradeneeded = event => {
-                    const db = event.target.result;
-                    if (!db.objectStoreNames.contains(BLOB_STORE_NAME)) {
-                        db.createObjectStore(BLOB_STORE_NAME, { keyPath: 'key' });
-                    }
-                };
-                request.onsuccess = event => {
-                    const db = event.target.result;
-                    const tx = db.transaction(BLOB_STORE_NAME, 'readonly');
-                    const store = tx.objectStore(BLOB_STORE_NAME);
-                    const getReq = store.get(key);
-                    getReq.onsuccess = () => {
-                        const record = getReq.result;
-                        if (record?.blob instanceof Blob) {
-                            resolve(record.blob);
-                        } else {
-                            resolve(null);
-                        }
-                    };
-                    getReq.onerror = () => resolve(null);
-                };
-                request.onerror = () => resolve(null);
-            } catch (error) {
-                resolve(null);
-            }
-        });
-    }
-
-    function safeSendMessage(payload) {
-        const maybePromise = chrome.runtime.sendMessage(payload);
-        if (maybePromise && typeof maybePromise.catch === 'function') {
-            maybePromise.catch(() => {});
-        }
-    }
-
     function sendProgressUpdate() {
         const audio = currentlyPlayingAudio;
-        safeSendMessage({
+        sendMessageSafe({
             type: 'progress',
             currentTime: audio ? audio.currentTime : 0,
             duration: getDuration(audio),
@@ -96,27 +53,13 @@
         audio.removeEventListener('pause', immediateProgressUpdate);
         audio.removeEventListener('loadedmetadata', immediateProgressUpdate);
         audio.removeEventListener('ended', handleEnded);
-
-        if (audio._minecraftErrorHandler) {
-            audio.removeEventListener('error', audio._minecraftErrorHandler);
-            delete audio._minecraftErrorHandler;
-        }
-        if (audio._minecraftErrorHandled) {
-            delete audio._minecraftErrorHandled;
-        }
     }
 
     function revokeCurrentBlobUrl() {
-        if (!currentBlobUrl) {
-            return;
-        }
-
-        try {
+        if (currentBlobUrl) {
             URL.revokeObjectURL(currentBlobUrl);
-        } catch (error) {
-            /* ignore revoke errors */
+            currentBlobUrl = null;
         }
-        currentBlobUrl = null;
     }
 
     function getDuration(audio) {
@@ -129,25 +72,13 @@
     }
 
     function clampToDuration(time, audio) {
-        if (!audio) {
-            return 0;
-        }
-
         const duration = getDuration(audio);
         const lowerBounded = Math.max(time, 0);
-        if (duration === 0) {
-            return lowerBounded;
-        }
-
-        return Math.min(lowerBounded, duration);
+        return duration === 0 ? lowerBounded : Math.min(lowerBounded, duration);
     }
 
     function notifyTrackStopped(reason = 'stopped') {
-        safeSendMessage({
-            type: 'playbackStopped',
-            reason,
-            discId: currentDiscId || undefined
-        });
+        sendMessageSafe({ type: 'playbackStopped', reason, discId: currentDiscId });
         currentDiscId = null;
     }
 
@@ -160,74 +91,39 @@
         }
 
         if (sourceNode) {
-            try {
-                sourceNode.disconnect();
-            } catch (error) {
-                /* ignore disconnect errors */
-            }
-            sourceNode = null;
+            sourceNode.disconnect();
         }
 
-        try {
-            sourceNode = audioContext.createMediaElementSource(audio);
-            sourceNode.connect(gainNode);
-        } catch (error) {
-            /* ignore already-connected media elements */
-        }
+        sourceNode = audioContext.createMediaElementSource(audio);
+        sourceNode.connect(gainNode);
     }
 
-    async function resolvePlayableSource({ source, blob, base64Data, mimeType, cacheKey }) {
-        let resolvedSource = source || null;
+    async function resolvePlayableSource({ source, cacheKey }) {
+        if (source) {
+            return source;
+        }
 
-        if (!resolvedSource && typeof cacheKey === 'string') {
-            const cachedBlob = await loadBlobFromCache(cacheKey);
+        if (typeof cacheKey === 'string') {
+            const cachedBlob = await readBlobFromCache(cacheKey).catch(() => null);
             if (cachedBlob) {
                 currentBlobUrl = URL.createObjectURL(cachedBlob);
                 return currentBlobUrl;
             }
         }
 
-        if (!resolvedSource && typeof base64Data === 'string') {
-            const reconstructedBlob = base64ToBlob(base64Data, mimeType || 'audio/ogg');
-            if (reconstructedBlob instanceof Blob) {
-                currentBlobUrl = URL.createObjectURL(reconstructedBlob);
-                return currentBlobUrl;
-            }
-        }
-
-        if (!resolvedSource && blob instanceof Blob) {
-            currentBlobUrl = URL.createObjectURL(blob);
-            return currentBlobUrl;
-        }
-
-        if (!resolvedSource) {
-            return null;
-        }
-
-        return resolvedSource;
+        return null;
     }
 
-    async function playAudio({ source, blob, base64Data, mimeType, volume = 1, discId, cacheKey }) {
+    async function playAudio({ source, volume = 1, discId, cacheKey }) {
         if (currentlyPlayingAudio) {
             detachAudioHandlers(currentlyPlayingAudio);
             currentlyPlayingAudio.pause();
         }
 
         revokeCurrentBlobUrl();
+        currentDiscId = discId;
 
-        let resolvedSource = null;
-        try {
-            resolvedSource = await resolvePlayableSource({
-                source,
-                blob,
-                base64Data,
-                mimeType,
-                cacheKey
-            });
-        } catch (error) {
-            console.error('[MinecraftJukebox Offscreen] Failed to resolve audio source for', discId, error);
-        }
-
+        const resolvedSource = await resolvePlayableSource({ source, cacheKey });
         if (!resolvedSource) {
             notifyTrackStopped('error');
             return;
@@ -239,58 +135,43 @@
             audio.crossOrigin = 'anonymous';
         }
         audio.src = resolvedSource;
-        audio.loop = false;
-        audio.currentTime = 0;
-        currentVolume = clampVolume(volume, { defaultValue: 1, max: MAX_VOLUME });
+        currentVolume = clampVolume(volume);
 
         attachAudioHandlers(audio);
 
+        let errorHandled = false;
         const handleError = event => {
-            if (audio._minecraftErrorHandled) {
+            if (errorHandled || currentlyPlayingAudio !== audio) {
                 return;
             }
 
-            audio._minecraftErrorHandled = true;
+            errorHandled = true;
             console.error('[MinecraftJukebox Offscreen] Audio error for', discId, event?.error || event);
             notifyTrackStopped('error');
             detachAudioHandlers(audio);
-            if (currentlyPlayingAudio === audio) {
-                currentlyPlayingAudio = null;
-            }
+            currentlyPlayingAudio = null;
             revokeCurrentBlobUrl();
         };
-
-        audio._minecraftErrorHandler = handleError;
         audio.addEventListener('error', handleError);
 
         currentlyPlayingAudio = audio;
-        currentDiscId = discId || currentDiscId;
+        currentDiscId = discId;
 
         ensureAudioGraph(audio);
-        if (gainNode) {
-            gainNode.gain.value = currentVolume;
-        }
-        if (audioContext && audioContext.state === 'suspended') {
+        gainNode.gain.value = currentVolume;
+        if (audioContext.state === 'suspended') {
             audioContext.resume().catch(() => {});
         }
 
         sendProgressUpdate();
 
-        audio.play().then(() => {
-            sendProgressUpdate();
-        }).catch(error => {
-            handleError(error);
-        });
+        audio.play().then(sendProgressUpdate).catch(handleError);
     }
 
     function setVolume(volume) {
-        const audio = currentlyPlayingAudio;
-        currentVolume = clampVolume(volume, { defaultValue: 1, max: MAX_VOLUME });
-
+        currentVolume = clampVolume(volume);
         if (gainNode) {
             gainNode.gain.value = currentVolume;
-        } else if (audio) {
-            audio.volume = Math.min(Math.max(currentVolume, 0), 1);
         }
     }
 
@@ -310,11 +191,10 @@
 
         const audio = currentlyPlayingAudio;
         audio.play().then(sendProgressUpdate).catch(() => {
+            if (currentlyPlayingAudio !== audio) return;
             notifyTrackStopped('error');
             detachAudioHandlers(audio);
-            if (currentlyPlayingAudio === audio) {
-                currentlyPlayingAudio = null;
-            }
+            currentlyPlayingAudio = null;
         });
     }
 
@@ -375,36 +255,25 @@
         notifyTrackStopped('ended');
     }
 
-    chrome.runtime.onMessage.addListener(msg => {
+    chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         if (msg.play) {
-            playAudio(msg.play);
-            return;
-        }
-        if (msg.pause) {
-            pauseAudio();
-            return;
-        }
-        if (msg.resume) {
-            resumeAudio();
-            return;
-        }
-        if (msg.toggle) {
+            // Acknowledge setup after a local blob lookup finishes so a newer
+            // play command cannot overtake it. Buffering continues independently.
+            playAudio(msg.play).then(() => sendResponse({ ok: true }), error => {
+                console.error('[MinecraftJukebox Offscreen] Failed to prepare audio', error);
+                notifyTrackStopped('error');
+                sendResponse({ ok: false });
+            });
+            return true;
+        } else if (msg.toggle) {
             togglePlayback();
-            return;
-        }
-        if (msg.stop) {
+        } else if (msg.stop) {
             stopAudio();
-            return;
-        }
-        if (typeof msg.seekRelative === 'number') {
+        } else if (typeof msg.seekRelative === 'number') {
             seekRelative(msg.seekRelative);
-            return;
-        }
-        if (typeof msg.seekTo === 'number') {
+        } else if (typeof msg.seekTo === 'number') {
             seekTo(msg.seekTo);
-            return;
-        }
-        if (typeof msg.setVolume === 'number') {
+        } else if (typeof msg.setVolume === 'number') {
             setVolume(msg.setVolume);
         }
     });

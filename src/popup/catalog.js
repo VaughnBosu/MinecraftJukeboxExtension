@@ -5,93 +5,27 @@
     const JUKEBOX_AUTOPLAY_COUNT = 10;
 
     const DISC_CATALOG = Object.freeze([
-        { discId: '13', assetKey: '13', label: '13', imagePath: 'assets/images/13.webp' },
-        {
-            discId: 'cat',
-            assetKey: 'cat',
-            label: 'Cat',
-            imagePath: 'assets/images/cat.webp',
-            streamSources: ['https://dn710204.ca.archive.org/0/items/08-minecraft_202302/19%20-%20Cat.mp3']
-        },
-        {
-            discId: 'blocks',
-            assetKey: 'blocks',
-            label: 'Blocks',
-            imagePath: 'assets/images/blocks.webp',
-            streamSources: ['https://dn721809.ca.archive.org/0/items/minecraft-volume-beta/Minecraft%20Volume%20Beta/28.%20Blocks.mp3']
-        },
-        {
-            discId: 'chirp',
-            assetKey: 'chirp',
-            label: 'Chirp',
-            imagePath: 'assets/images/chirp.webp',
-            streamSources: ['https://dn721809.ca.archive.org/0/items/minecraft-volume-beta/Minecraft%20Volume%20Beta/20.%20Chirp.mp3']
-        },
-        {
-            discId: 'far',
-            assetKey: 'far',
-            label: 'Far',
-            imagePath: 'assets/images/far.webp',
-            streamSources: ['https://dn721809.ca.archive.org/0/items/minecraft-volume-beta/Minecraft%20Volume%20Beta/29.%20Far.mp3']
-        },
-        {
-            discId: 'mall',
-            assetKey: 'mall',
-            label: 'Mall',
-            imagePath: 'assets/images/mall.webp',
-            streamSources: ['https://dn721809.ca.archive.org/0/items/minecraft-volume-beta/Minecraft%20Volume%20Beta/27.%20Mall.mp3']
-        },
-        {
-            discId: 'mellohi',
-            assetKey: 'mellohi',
-            label: 'Mellohi',
-            imagePath: 'assets/images/mellohi.webp',
-            streamSources: ['https://dn721809.ca.archive.org/0/items/minecraft-volume-beta/Minecraft%20Volume%20Beta/22.%20Mellohi.mp3']
-        },
-        { discId: 'stal', assetKey: 'stal', label: 'Stal', imagePath: 'assets/images/stal.webp' },
-        {
-            discId: 'strad',
-            assetKey: 'strad',
-            label: 'Strad',
-            imagePath: 'assets/images/strad.webp',
-            streamSources: ['https://archive.org/download/Minecraftostvolumebeta/C418-Minecraft%20Soundtrack%20Volume%20Beta/24.%20Strad.mp3']
-        },
-        {
-            discId: 'ward',
-            assetKey: 'ward',
-            label: 'Ward',
-            imagePath: 'assets/images/ward.webp',
-            streamSources: ['https://dn721809.ca.archive.org/0/items/minecraft-volume-beta/Minecraft%20Volume%20Beta/26.%20Ward.mp3']
-        },
-        {
-            discId: '11',
-            assetKey: '11',
-            label: '11',
-            imagePath: 'assets/images/11.webp',
-            streamSources: ['https://minecraft.wiki/images/11.ogg?348cd']
-        },
-        {
-            discId: 'wait',
-            assetKey: 'wait',
-            label: 'Wait',
-            imagePath: 'assets/images/wait.webp',
-            streamSources: ['https://archive.org/download/Minecraftostvolumebeta/C418-Minecraft%20Soundtrack%20Volume%20Beta/21.%20Wait.mp3']
-        },
-        { discId: 'otherside', assetKey: 'otherside', label: 'Otherside', imagePath: 'assets/images/otherside.webp' },
-        { discId: '5', assetKey: '5', label: '5', imagePath: 'assets/images/5.webp' },
-        {
-            discId: 'pigstep',
-            assetKey: 'pigstep',
-            label: 'Pigstep',
-            imagePath: 'assets/images/pigstep.webp',
-            streamSources: ['https://dn721806.ca.archive.org/0/items/minecraft-nether-update-original-game-soundtrack-flac/04.%20Lena%20Raine%20-%20Pigstep%20%28Mono%20Mix%29.mp3']
-        },
-        { discId: 'relic', assetKey: 'relic', label: 'Relic', imagePath: 'assets/images/relic.webp' },
-        { discId: 'creator', assetKey: 'creator', label: 'Creator', imagePath: 'assets/images/Creator.webp' },
-        { discId: 'creator_music_box', assetKey: 'creator_music_box', label: 'Creator (Music Box)', imagePath: 'assets/images/Creator(Music-Box).webp' },
-        { discId: 'precipice', assetKey: 'precipice', label: 'Precipice', imagePath: 'assets/images/Precipice.webp' },
-        { discId: 'tears', assetKey: 'tears', label: 'Tears', imagePath: 'assets/images/Tears.webp' },
-        { discId: 'lava_chicken', assetKey: 'lava_chicken', label: 'Lava Chicken', imagePath: 'assets/images/Lava-Chicken.webp' }
+        { discId: '13', label: '13', imagePath: '/assets/images/13.webp' },
+        { discId: 'cat', label: 'Cat', imagePath: '/assets/images/cat.webp', streamSources: ['https://dn710204.ca.archive.org/0/items/08-minecraft_202302/19%20-%20Cat.mp3'] },
+        { discId: 'blocks', label: 'Blocks', imagePath: '/assets/images/blocks.webp', streamSources: ['https://archive.org/download/Minecraftostvolumebeta/C418-Minecraft%20Soundtrack%20Volume%20Beta/28.%20Blocks.mp3'] },
+        { discId: 'chirp', label: 'Chirp', imagePath: '/assets/images/chirp.webp', streamSources: ['https://archive.org/download/Minecraftostvolumebeta/C418-Minecraft%20Soundtrack%20Volume%20Beta/20.%20Chirp.mp3'] },
+        { discId: 'far', label: 'Far', imagePath: '/assets/images/far.webp', streamSources: ['https://archive.org/download/Minecraftostvolumebeta/C418-Minecraft%20Soundtrack%20Volume%20Beta/29.%20Far.mp3'] },
+        { discId: 'mall', label: 'Mall', imagePath: '/assets/images/mall.webp', streamSources: ['https://archive.org/download/Minecraftostvolumebeta/C418-Minecraft%20Soundtrack%20Volume%20Beta/27.%20Mall.mp3'] },
+        { discId: 'mellohi', label: 'Mellohi', imagePath: '/assets/images/mellohi.webp', streamSources: ['https://archive.org/download/Minecraftostvolumebeta/C418-Minecraft%20Soundtrack%20Volume%20Beta/22.%20Mellohi.mp3'] },
+        { discId: 'stal', label: 'Stal', imagePath: '/assets/images/stal.webp' },
+        { discId: 'strad', label: 'Strad', imagePath: '/assets/images/strad.webp', streamSources: ['https://archive.org/download/Minecraftostvolumebeta/C418-Minecraft%20Soundtrack%20Volume%20Beta/24.%20Strad.mp3'] },
+        { discId: 'ward', label: 'Ward', imagePath: '/assets/images/ward.webp', streamSources: ['https://archive.org/download/Minecraftostvolumebeta/C418-Minecraft%20Soundtrack%20Volume%20Beta/26.%20Ward.mp3'] },
+        { discId: '11', label: '11', imagePath: '/assets/images/11.webp', streamSources: ['https://minecraft.wiki/images/11.ogg?348cd'] },
+        { discId: 'wait', label: 'Wait', imagePath: '/assets/images/wait.webp', streamSources: ['https://archive.org/download/Minecraftostvolumebeta/C418-Minecraft%20Soundtrack%20Volume%20Beta/21.%20Wait.mp3'] },
+        { discId: 'otherside', label: 'Otherside', imagePath: '/assets/images/otherside.webp' },
+        { discId: '5', label: '5', imagePath: '/assets/images/5.webp' },
+        { discId: 'pigstep', label: 'Pigstep', imagePath: '/assets/images/pigstep.webp', streamSources: ['https://dn721806.ca.archive.org/0/items/minecraft-nether-update-original-game-soundtrack-flac/04.%20Lena%20Raine%20-%20Pigstep%20%28Mono%20Mix%29.mp3'] },
+        { discId: 'relic', label: 'Relic', imagePath: '/assets/images/relic.webp' },
+        { discId: 'creator', label: 'Creator', imagePath: '/assets/images/Creator.webp' },
+        { discId: 'creator_music_box', label: 'Creator (Music Box)', imagePath: '/assets/images/Creator(Music-Box).webp' },
+        { discId: 'precipice', label: 'Precipice', imagePath: '/assets/images/Precipice.webp' },
+        { discId: 'tears', label: 'Tears', imagePath: '/assets/images/Tears.webp' },
+        { discId: 'lava_chicken', label: 'Lava Chicken', imagePath: '/assets/images/Lava-Chicken.webp' }
     ]);
 
     const JUKEBOX_TRACKS = Object.freeze([
@@ -155,14 +89,30 @@
         { title: 'Pigstep', url: 'https://archive.org/download/minecraft-nether-update-original-game-soundtrack-flac/04.%20Lena%20Raine%20-%20Pigstep%20%28Mono%20Mix%29.mp3' }
     ]);
 
-    const DISC_BY_KEY = new Map(DISC_CATALOG.map(entry => [entry.assetKey, entry]));
+    const DISC_BY_KEY = new Map(DISC_CATALOG.map(entry => [entry.discId, entry]));
 
     function slugifyForJukebox(value) {
-        return String(value || '')
+        return String(value)
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/^-+|-+$/g, '');
     }
+
+    const BACKGROUND_TRACKS = Object.freeze(JUKEBOX_TRACKS.map(track => {
+        const isAlpha = track.url.includes('08-minecraft_202302');
+        const isNether = track.url.includes('minecraft-nether-update');
+        const album = isAlpha ? 'Volume Alpha' : isNether ? 'Nether Update' : 'Volume Beta';
+
+        return Object.freeze({
+            title: track.title,
+            album,
+            artist: isNether ? 'Lena Raine' : 'C418',
+            discId: track.title,
+            assetKey: `${JUKEBOX_DISC_ID}_${slugifyForJukebox(album)}_${slugifyForJukebox(track.title)}`,
+            objectUrl: track.url,
+            isStream: true
+        });
+    }));
 
     function shuffleArray(array) {
         for (let i = array.length - 1; i > 0; i -= 1) {
@@ -176,18 +126,13 @@
         return shared.toAssetKey(discId) === JUKEBOX_DISC_ID;
     }
 
-    function getPopupDiscs() {
-        return DISC_CATALOG.slice();
-    }
-
     function getDiscMeta(discId) {
         const assetKey = shared.toAssetKey(discId);
         return assetKey ? DISC_BY_KEY.get(assetKey) || null : null;
     }
 
     function getStreamingSources(discId) {
-        const disc = getDiscMeta(discId);
-        return Array.isArray(disc?.streamSources) ? disc.streamSources.slice() : [];
+        return getDiscMeta(discId)?.streamSources || [];
     }
 
     function hasStreamingSource(discId) {
@@ -198,52 +143,15 @@
         return isJukeboxDisc(discId) || hasStreamingSource(discId);
     }
 
-    function getRandomizedJukeboxTracks(limit) {
-        if (!Number.isInteger(limit) || limit <= 0) {
-            return [];
-        }
-
-        const candidates = JUKEBOX_TRACKS.filter(track => track?.title && track?.url)
-            .map(track => ({ title: track.title.trim(), url: track.url }));
-        if (!candidates.length) {
-            return [];
-        }
-
-        const pool = shuffleArray(candidates.slice());
-        return pool.slice(0, Math.min(limit, pool.length));
-    }
-
-    function buildJukeboxTrackPayload(track, index) {
-        if (!track?.title || !track?.url) {
-            return null;
-        }
-
-        const trimmedTitle = track.title.trim();
-        if (!trimmedTitle) {
-            return null;
-        }
-
-        const paddedOrder = String(index + 1).padStart(2, '0');
-        const slug = slugifyForJukebox(trimmedTitle) || `track-${paddedOrder}`;
-        return {
-            discId: trimmedTitle,
-            assetKey: `${JUKEBOX_DISC_ID}_${paddedOrder}_${slug}`,
-            objectUrl: track.url,
-            isStream: true
-        };
-    }
-
-    function buildJukeboxTrackPayloads(limit = JUKEBOX_AUTOPLAY_COUNT) {
-        return getRandomizedJukeboxTracks(limit)
-            .map((track, index) => buildJukeboxTrackPayload(track, index))
-            .filter(Boolean);
+    function buildJukeboxTrackPayloads() {
+        return shuffleArray(BACKGROUND_TRACKS.slice())
+            .slice(0, JUKEBOX_AUTOPLAY_COUNT)
+            .map(({ discId, assetKey, objectUrl, isStream }) => ({ discId, assetKey, objectUrl, isStream }));
     }
 
     globalThis.MinecraftJukeboxCatalog = {
-        JUKEBOX_DISC_ID,
-        JUKEBOX_AUTOPLAY_COUNT,
-        getPopupDiscs,
-        getDiscMeta,
+        getPopupDiscs: () => DISC_CATALOG,
+        getBackgroundTracks: () => BACKGROUND_TRACKS,
         getStreamingSources,
         hasStreamingSource,
         canDiscStreamWithoutLibrary,

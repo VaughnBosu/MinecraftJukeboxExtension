@@ -6,13 +6,13 @@ const URL_PATTERN = /https?:\/\/[^\s"'<>)]+/g;
 const AUDIO_PATTERN = /\.(mp3|ogg)(\?|$)/i;
 
 const RUNTIME_URL_FILES = [
-    'popup/catalog.js',
-    'popup.html',
-    'popup/main.js',
-    'background.js',
-    'disc-help.html',
-    'macOSinstructions.html',
-    'windowsinstructions.html'
+    'src/popup/catalog.js',
+    'src/popup/popup.html',
+    'src/popup/main.js',
+    'src/background/index.js',
+    'src/pages/disc-help.html',
+    'src/pages/macOSinstructions.html',
+    'src/pages/windowsinstructions.html'
 ];
 
 async function extractRuntimeUrls() {
@@ -41,10 +41,15 @@ async function probeUrl(url, { isAudio = false } = {}) {
     const response = await fetch(url, {
         method: 'GET',
         redirect: 'follow',
+        signal: AbortSignal.timeout(15_000),
         headers: isAudio ? { Range: 'bytes=0-0' } : undefined
     });
 
-    const body = await response.arrayBuffer();
+    // Some providers ignore Range. Read only the first chunk rather than
+    // downloading every complete song merely to check provider health.
+    const reader = response.body?.getReader();
+    const firstChunk = reader ? await reader.read() : null;
+    await reader?.cancel();
     const contentType = response.headers.get('content-type') || '';
     const accessControlAllowOrigin = response.headers.get('access-control-allow-origin');
 
@@ -52,7 +57,7 @@ async function probeUrl(url, { isAudio = false } = {}) {
         ok: response.ok,
         status: response.status,
         finalUrl: response.url,
-        bodyLength: body.byteLength,
+        bodyLength: firstChunk?.value?.byteLength || 0,
         contentType,
         accessControlAllowOrigin
     };

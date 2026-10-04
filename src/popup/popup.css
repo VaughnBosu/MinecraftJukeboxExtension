@@ -1,42 +1,65 @@
 @font-face {
     font-family: 'Minecraft';
-    src: url('assets/font/Minecraft.otf') format('opentype');
+    src: url('/assets/font/Minecraft.otf') format('opentype');
     font-weight: normal;
     font-style: normal;
 }
 
-html, body {
-    height: auto;
-    min-height: 0;
-    overflow: hidden;
+* {
+    box-sizing: border-box;
+}
+
+html {
+    /* The player already has a dark theme; preserve the artwork's own colors. */
+    color-scheme: only dark;
+    background: #222;
+    overflow-x: hidden;
 }
 
 body {
     --scale-factor: 0.85;
+    --accent: #f9a602;
     font-family: Arial, sans-serif;
-    width: clamp(320px, calc(720px * var(--scale-factor)), 800px);
+    --popup-width: 360px;
+    width: var(--popup-width);
+    max-height: 600px;
+    overflow-x: hidden;
+    overflow-y: auto;
     margin: 0;
     background-color: #222;
     color: #fff;
 }
 
-body.scale-small {
-    --scale-factor: 0.85;
-}
-
 body.scale-medium {
     --scale-factor: 1;
+    --popup-width: 480px;
 }
 
 body.scale-large {
     --scale-factor: 1.15;
+    --popup-width: 600px;
+}
+
+body.player-window {
+    width: 100%;
+    max-width: 100vw;
+    max-height: none;
+    min-height: 100vh;
+}
+
+button, input, select, a {
+    -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
 }
 
 .settings-row {
     display: flex;
     align-items: center;
     gap: calc(6px * var(--scale-factor));
-    margin-left: auto;
 }
 
 .settings-label {
@@ -66,26 +89,25 @@ body.scale-large {
     display: flex;
     align-items: center;
     gap: calc(10px * var(--scale-factor));
-    margin-left: auto;
+    width: 100%;
     flex-wrap: wrap;
 }
 
-.top-controls .settings-row {
-    margin-left: 0;
+.assets-btn, .sponsor-btn {
+    background-color: #2d8f2d;
+}
+
+.assets-btn:hover, .sponsor-btn:hover {
+    background-color: #39a139;
 }
 
 .assets-btn {
     font-family: 'Minecraft';
     font-size: calc(13px * var(--scale-factor));
     padding: calc(6px * var(--scale-factor)) calc(10px * var(--scale-factor));
-    background-color: #2d8f2d;
     border: 1px solid #1a631a;
     border-radius: calc(4px * var(--scale-factor));
     color: #fff;
-}
-
-.assets-btn:hover {
-    background-color: #39a139;
 }
 
 .assets-btn:disabled {
@@ -96,7 +118,6 @@ body.scale-large {
 .assets-status-row {
     padding: 0 calc(12px * var(--scale-factor)) calc(6px * var(--scale-factor));
     min-height: calc(24px * var(--scale-factor));
-    transition: opacity 0.15s ease;
 }
 
 .assets-status-row.hidden {
@@ -109,14 +130,6 @@ body.scale-large {
     color: rgba(255, 255, 255, 0.75);
 }
 
-.hidden-input {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-    width: 0;
-    height: 0;
-}
-
 .assets-status.success {
     color: #7ff07f;
 }
@@ -126,13 +139,14 @@ body.scale-large {
 }
 
 .assets-status.warning {
-    color: #f9a602;
+    color: var(--accent);
 }
 
 .volume-row {
     display: flex;
     align-items: center;
     gap: calc(6px * var(--scale-factor));
+    margin-left: auto;
 }
 
 .volume-label {
@@ -145,16 +159,20 @@ body.scale-large {
 
 .volume-icon {
     display: inline-block;
-    width: calc(20px * var(--scale-factor));
-    height: calc(20px * var(--scale-factor));
-    background-image: url('assets/images/soundIcon.png');
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 0;
+    background-color: transparent;
+    cursor: pointer;
+    background-image: url('/assets/images/soundIcon.png');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
 }
 
 .volume-icon.muted {
-    background-image: url('assets/images/nosoundIcon.png');
+    background-image: url('/assets/images/nosoundIcon.png');
 }
 .sr-only {
     position: absolute;
@@ -169,41 +187,22 @@ body.scale-large {
 }
 
 .volume-slider {
-    width: calc(140px * var(--scale-factor));
-    accent-color: #f9a602;
+    width: calc(88px * var(--scale-factor));
+    accent-color: var(--accent);
 }
 
 .jukebox-hero {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: calc(16px * var(--scale-factor));
+    padding: calc(12px * var(--scale-factor));
     flex-direction: column;
     gap: calc(10px * var(--scale-factor));
 }
 
-.hero-disc {
-    width: calc(216px * var(--scale-factor));
-    height: calc(216px * var(--scale-factor));
-    border-radius: calc(8px * var(--scale-factor));
-    background-image: url('assets/images/jukebox.webp');
-    background-size: contain;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-color: transparent;
-    border: none;
-    box-shadow: none;
-    transition: transform 0.2s ease;
-    padding: 0;
-}
-
 .hero-disc:focus-visible {
-    outline: 3px solid #f9a602;
+    outline: 3px solid var(--accent);
     outline-offset: 4px;
-}
-
-.hero-disc:hover {
-    transform: none;
 }
 
 .jukebox-hint {
@@ -240,7 +239,7 @@ body.scale-large {
 }
 
 .disc-menu-toggle:focus-visible {
-    outline: 2px solid #f9a602;
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
 }
 
@@ -268,28 +267,13 @@ body.scale-large {
     margin-bottom: calc(10px * var(--scale-factor));
 }
 
-.disc-panel-actions .queue-tip {
-    margin: 0;
-    font-size: calc(12px * var(--scale-factor));
-    color: #bbb;
-}
-
-.disc-panel-actions .assets-btn {
+.disc-panel-actions .assets-btn,
+.disc-panel-actions .info-btn {
     flex-shrink: 0;
 }
 
 .disc-panel-actions .info-btn {
-    flex-shrink: 0;
     background-color: #2f2f2f;
-}
-
-.disc-panel-actions.no-assets-buttons .queue-tip {
-    margin-left: 0;
-    text-align: left;
-}
-
-.disc-menu-panel[hidden] {
-    display: none;
 }
 
 #discs {
@@ -301,14 +285,12 @@ body.scale-large {
 }
 
 .disc-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
     margin-top: calc(12px * var(--scale-factor));
-    gap: calc(6px * var(--scale-factor));
-    flex-wrap: wrap;
     padding: 0 calc(12px * var(--scale-factor));
+}
+
+.player-panel {
+    margin-bottom: calc(12px * var(--scale-factor));
 }
 
 .footer-links {
@@ -338,14 +320,6 @@ body.scale-large {
     transition: background-color 0.2s ease;
 }
 
-.sponsor-btn {
-    background-color: #2d8f2d;
-}
-
-.sponsor-btn:hover {
-    background-color: #39a139;
-}
-
 .review-btn {
     background-color: #2a6be9;
 }
@@ -362,21 +336,11 @@ body.scale-large {
     background-color: #8f63ff;
 }
 
-.vinyl-btn {
-    background-color: #f9a602;
-    color: #111;
-}
-
-.vinyl-btn:hover {
-    background-color: #ffb733;
-}
-
 .now-playing {
     font-family: 'Minecraft';
     font-size: calc(24px * var(--scale-factor));
     text-align: left;
     margin: 0;
-    flex: 1;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -398,6 +362,16 @@ body.scale-large {
     border: none;
     padding: 0;
     background-color: transparent;
+    appearance: none;
+}
+
+.disc-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+    pointer-events: none;
 }
 
 .disc:hover {
@@ -405,14 +379,13 @@ body.scale-large {
 }
 
 .disc:focus-visible {
-    outline: 2px solid #f9a602;
+    outline: 2px solid var(--accent);
     outline-offset: 3px;
 }
 
 .disc.disabled {
-    opacity: 0.4;
-    filter: grayscale(100%);
-    cursor: not-allowed;
+    opacity: 0.5;
+    cursor: help;
 }
 
 .disc:hover:after {
@@ -429,10 +402,20 @@ body.scale-large {
     font-weight: bold;
 }
 
+/* Must stay after .disc so its size and square corners win the cascade. */
 .hero-disc {
-    width: calc(216px * var(--scale-factor));
-    height: calc(216px * var(--scale-factor));
+    width: calc(128px * var(--scale-factor));
+    height: calc(128px * var(--scale-factor));
     border-radius: calc(8px * var(--scale-factor));
+    background-image: url('/assets/images/jukebox.webp');
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    image-rendering: pixelated;
 }
 
 .hero-disc:hover:after {
@@ -454,7 +437,7 @@ body.scale-large {
     align-items: center;
     gap: calc(8px * var(--scale-factor));
     margin: 0;
-    flex: 0 0 auto;
+    flex: 1 1 auto;
     flex-wrap: wrap;
 }
 
@@ -487,9 +470,7 @@ body.scale-large {
     font-size: calc(12px * var(--scale-factor));
     color: #bbb;
     margin: 0;
-    margin-left: auto;
-    text-align: right;
-    white-space: nowrap;
+    line-height: 1.5;
 }
 
 .progress-wrapper {
@@ -497,7 +478,7 @@ body.scale-large {
     align-items: center;
     gap: calc(8px * var(--scale-factor));
     padding: 0;
-    flex: 1 1 auto;
+    flex: 1 1 100%;
     min-width: calc(140px * var(--scale-factor));
     margin-left: auto;
 }
@@ -526,6 +507,7 @@ body.scale-large {
 .queue-heading {
     font-family: 'Minecraft';
     font-size: calc(20px * var(--scale-factor));
+    margin: calc(14px * var(--scale-factor)) 0;
 }
 
 .queue-list {
@@ -551,6 +533,7 @@ body.scale-large {
 
 .queue-item-title {
     flex: 1;
+    min-width: 0;
     margin-right: calc(8px * var(--scale-factor));
     white-space: nowrap;
     overflow: hidden;
@@ -560,6 +543,7 @@ body.scale-large {
 .queue-item-controls {
     display: flex;
     gap: calc(6px * var(--scale-factor));
+    flex-shrink: 0;
 }
 
 .queue-item button {
@@ -577,12 +561,13 @@ body.scale-large {
     background-color: #4c4;
 }
 
-.queue-item button.queue-remove {
+/* Must stay after .control-btn so .clear-queue-btn's red beats the grey. */
+.queue-item button.queue-remove, .clear-queue-btn {
     background-color: #a33;
     color: #fff;
 }
 
-.queue-item button.queue-remove:hover {
+.queue-item button.queue-remove:hover, .clear-queue-btn:hover {
     background-color: #b44;
 }
 
@@ -594,14 +579,8 @@ body.scale-large {
 .clear-queue-btn {
     padding: calc(4px * var(--scale-factor)) calc(12px * var(--scale-factor));
     font-size: calc(14px * var(--scale-factor));
-    background-color: #a33;
-    color: #fff;
     border-radius: 0;
     border: 2px solid #2a1111;
-}
-
-.clear-queue-btn:hover {
-    background-color: #b44;
 }
 
 .empty-queue {
@@ -609,4 +588,190 @@ body.scale-large {
     padding: calc(12px * var(--scale-factor)) calc(10px * var(--scale-factor));
     font-family: 'Minecraft';
     color: #888;
+}
+
+.popout-btn {
+    font-size: 12px;
+    padding: 6px 8px;
+    margin-right: auto;
+}
+
+.songs-menu {
+    font-family: 'Minecraft', monospace;
+}
+
+.song-search {
+    width: 100%;
+    min-width: 0;
+    padding: calc(10px * var(--scale-factor));
+    border: 2px solid #555;
+    border-radius: 0;
+    box-shadow: inset 2px 2px #111;
+    background: #191919;
+    color: #fff;
+    font: inherit;
+    font-size: calc(15px * var(--scale-factor));
+}
+
+.song-search::placeholder {
+    color: #bbb;
+}
+
+.song-count, .song-empty {
+    font-size: calc(12px * var(--scale-factor));
+    line-height: 1.5;
+    color: #bbb;
+}
+
+.song-search-hint {
+    margin-top: calc(8px * var(--scale-factor));
+}
+
+.song-count {
+    margin: calc(10px * var(--scale-factor)) 0 calc(6px * var(--scale-factor));
+}
+
+.song-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border: 1px solid #444;
+}
+
+.song-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: calc(10px * var(--scale-factor));
+}
+
+.song-pagination[hidden] {
+    display: none;
+}
+
+.song-pagination .control-btn {
+    font-size: calc(12px * var(--scale-factor));
+    padding: calc(6px * var(--scale-factor)) calc(8px * var(--scale-factor));
+    border: 2px solid #1e1e1e;
+    border-radius: 0;
+    box-shadow: inset 1px 1px #666, inset -1px -1px #292929;
+}
+
+.song-page-range {
+    color: #bbb;
+    font-size: calc(12px * var(--scale-factor));
+    white-space: nowrap;
+}
+
+.song-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: calc(8px * var(--scale-factor));
+    border-bottom: 1px solid #444;
+    padding: calc(9px * var(--scale-factor)) calc(8px * var(--scale-factor));
+    background: #222;
+}
+
+.song-item[hidden] {
+    display: none;
+}
+
+.song-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.song-title, .song-album {
+    display: block;
+    overflow-wrap: anywhere;
+}
+
+.song-title {
+    font-size: calc(15px * var(--scale-factor));
+    line-height: 1.35;
+}
+
+.song-album {
+    font-size: calc(11px * var(--scale-factor));
+    color: #bbb;
+    line-height: 1.5;
+    margin-top: calc(5px * var(--scale-factor));
+}
+
+.song-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.song-actions button {
+    font: inherit;
+    font-size: calc(14px * var(--scale-factor));
+    padding: calc(6px * var(--scale-factor)) calc(8px * var(--scale-factor));
+    min-width: 30px;
+    min-height: 30px;
+    border: 2px solid #1e1e1e;
+    border-radius: 0;
+    box-shadow: inset 1px 1px #666, inset -1px -1px #292929;
+}
+
+.song-actions .song-queue {
+    color: #111;
+    background-color: #3a3;
+    box-shadow: inset 1px 1px #5c5, inset -1px -1px #282;
+}
+
+.song-actions .song-queue:hover {
+    background-color: #4c4;
+}
+
+.song-actions .song-play:hover {
+    background-color: #555;
+}
+
+@media (max-width: 380px) {
+    .top-controls { gap: 6px; }
+    .control-btn { padding-left: 9px; padding-right: 9px; }
+    .song-actions { margin-left: auto; }
+}
+
+body.popup-resizable {
+    padding-bottom: 18px;
+}
+
+.popup-resize-handle {
+    position: fixed;
+    z-index: 10;
+    left: 2px;
+    bottom: 2px;
+    width: 20px;
+    height: 20px;
+    border: 0;
+    padding: 0;
+    color: #999;
+    background: #222;
+    cursor: nesw-resize;
+    touch-action: none;
+}
+
+.popup-resize-handle::after {
+    content: '';
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    left: 4px;
+    bottom: 4px;
+    background: currentColor;
+    box-shadow: 0 -5px currentColor, 0 -10px currentColor, 5px 0 currentColor, 5px -5px currentColor, 10px 0 currentColor;
+}
+
+.popup-resize-handle:hover, .popup-resize-handle:focus-visible {
+    color: var(--accent);
+}
+
+body.popup-resizing, body.popup-resizing * {
+    cursor: nesw-resize !important;
+    user-select: none;
 }

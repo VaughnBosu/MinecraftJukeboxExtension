@@ -1,14 +1,14 @@
 {
   "manifest_version": 3,
   "name": "The Jukebox – Minecraft Music Player",
-  "version": "2026.4.03",
+  "version": "2026.10.3",
   "description": "Get a Minecraft Jukebox in your browser!",
   "permissions": [
       "offscreen",
       "storage"
   ],
   "action": {
-      "default_popup": "popup.html",
+      "default_popup": "src/popup/popup.html",
       "default_icon": {
           "16": "assets/icon/jukebox.png",
           "32": "assets/icon/jukebox.png",
@@ -25,14 +25,14 @@
       "128": "assets/icon/jukebox.png"
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "src/background/index.js"
   },
   "web_accessible_resources": [
     {
       "resources": [
-        "disc-help.html",
-        "macOSinstructions.html",
-        "windowsinstructions.html"
+        "src/pages/disc-help.html",
+        "src/pages/macOSinstructions.html",
+        "src/pages/windowsinstructions.html"
       ],
       "matches": [
         "<all_urls>"

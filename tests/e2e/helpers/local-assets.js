@@ -1,10 +1,8 @@
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
-const { execFile } = require('node:child_process');
-const { promisify } = require('node:util');
 
-const execFileAsync = promisify(execFile);
+const SAMPLE_AUDIO_PATH = path.join(__dirname, '..', 'fixtures', 'disc-sample.ogg');
 const SAMPLE_HASH = 'aa00000000000000000000000000000000000000';
 
 async function createLocalAssetsFixture(discKeys = ['13', 'stal']) {
@@ -16,15 +14,7 @@ async function createLocalAssetsFixture(discKeys = ['13', 'stal']) {
     await fs.mkdir(indexesDir, { recursive: true });
     await fs.mkdir(objectShardDir, { recursive: true });
 
-    await execFileAsync('ffmpeg', [
-        '-f', 'lavfi',
-        '-i', 'sine=frequency=440:duration=8',
-        '-c:a', 'libvorbis',
-        '-q:a', '2',
-        '-f', 'ogg',
-        objectFilePath,
-        '-y'
-    ]);
+    await fs.copyFile(SAMPLE_AUDIO_PATH, objectFilePath);
 
     const stats = await fs.stat(objectFilePath);
     const objects = {};

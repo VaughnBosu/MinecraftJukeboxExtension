@@ -1,5 +1,6 @@
 const { test, expect } = require('@playwright/test');
 const {
+    closeExtension,
     launchExtension,
     openPopupPage,
     waitForNowPlaying,
@@ -83,6 +84,7 @@ test('local asset upload enables local-only discs and survives relaunch', async 
             await relaunch.context.close();
         }
     } finally {
+        await closeExtension(launch);
         await cleanupFixture(fixture);
     }
 });

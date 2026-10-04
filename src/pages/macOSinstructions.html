@@ -4,33 +4,8 @@
   <meta charset="UTF-8">
   <title>macOS Setup — Use Local Minecraft Audio</title>
   <link rel="stylesheet" href="disc-help.css">
-  <style>
-    /* Small, page-specific helpers to complement disc-help.css */
-    .steps { counter-reset: step; list-style: none; padding-left: 0; }
-    .steps li { position: relative; margin: 0 0 1.1em; padding-left: 2.2em; }
-    .steps li::before {
-      counter-increment: step;
-      content: counter(step);
-      position: absolute; left: 0; top: 0.1em;
-      width: 1.6em; height: 1.6em; line-height: 1.6em;
-      text-align: center; border-radius: 8px;
-      background: #2a2a2a; color: #ffd166; font-weight: 700;
-      box-shadow: 0 2px 8px rgba(0,0,0,.35);
-    }
-    figure { margin: 0.6em 0 1.2em; }
-    .step-img { width: 100%; height: auto; border-radius: 10px; box-shadow: 0 8px 22px rgba(0,0,0,.35); }
-    figcaption { opacity: .85; font-size: 0.95em; margin-top: .5em; }
-  </style>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="dark light">
-  <meta name="description" content="Set up local Minecraft audio on macOS to unlock all discs in the Minecraft Jukebox extension.">
-  <link rel="icon" href="assets/icon/jukebox.png">
-  <link rel="apple-touch-icon" href="assets/icon/jukebox.png">
-  <meta name="theme-color" content="#0d0d0d">
-  <meta name="robots" content="noindex">
-  <meta name="format-detection" content="telephone=no">
-  <meta http-equiv="x-ua-compatible" content="IE=edge">
-  <meta name="referrer" content="no-referrer">
+  <link rel="icon" href="/assets/icon/jukebox.png">
 </head>
 <body>
   <main>
@@ -41,8 +16,8 @@
         Follow these quick steps and you’ll have every track available.
       </p>
       <p class="note">
-        Your files never leave your device. The extension only reads the audio inside your local Minecraft
-        install to enable playback in the popup.
+        Your files never leave your device. Chrome’s dialog says “Upload”, but the audio is only read from your local
+        Minecraft install and saved inside the extension for playback in the popup.
       </p>
     </section>
 
@@ -68,23 +43,19 @@
           </figure>
         </li>
         <li>
-          Select the <strong>assets</strong> folder (don’t open it) and click <strong>Open</strong>.
+          Click the <strong>assets</strong> folder once (don’t open it), then choose <strong>Upload</strong>.
           <figure>
             <img class="step-img" alt="Selecting the assets folder inside the Minecraft directory" src="https://usercontent.us.prod.clueso.io/a6c7ad9d-0381-4474-9f12-4086f43a8b90/3145ecdc-6838-4781-a15b-ddb7a3d14832/8d674cae-b886-4a72-926b-b1ae13784dc8/images/45c332e6-b324-4d35-b452-2d50aa2981ad.png">
           </figure>
         </li>
         <li>
-          If prompted, allow access to an <code>objects</code> folder and a file in <code>indexes</code>. That’s expected — the
-          extension reads those to find your music files.
-          <figure>
-            <img class="step-img" alt="Granting access in the file picker" src="https://usercontent.us.prod.clueso.io/a6c7ad9d-0381-4474-9f12-4086f43a8b90/3145ecdc-6838-4781-a15b-ddb7a3d14832/8d674cae-b886-4a72-926b-b1ae13784dc8/images/c2c1e451-82a7-4011-93e9-e3481b690cd2.png">
-          </figure>
+          Chrome asks “Upload N files to this site?” — click <strong>Upload</strong> to confirm.
+        </li>
+        <li>
+          Wait a moment while the extension imports and saves your discs. Once complete, the grayed-out discs become
+          playable; you can play, pause, skip, cue, and control volume as usual.
         </li>
       </ol>
-      <p>
-        After this, the extension scans your Minecraft folder and unlocks every disc. Any grayed-out discs become playable;
-        you can then play, pause, skip, cue, and control volume as usual.
-      </p>
     </section>
 
     <section>
@@ -92,7 +63,8 @@
       <ul>
         <li>If the folder doesn’t appear, press <strong>Command ⌘ + Shift + .</strong> to show hidden folders.</li>
         <li>Make sure you select the <strong>assets</strong> folder itself, not files inside it.</li>
-        <li>Using a managed Mac? You may need Finder permission to grant folder access.</li>
+        <li>The upload confirmation can take a few seconds to appear — the <code>assets</code> folder holds thousands of files.</li>
+        <li>If nothing loads, double-check that Minecraft Java Edition is installed on this Mac.</li>
       </ul>
     </section>
 

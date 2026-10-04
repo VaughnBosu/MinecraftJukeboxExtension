@@ -8,6 +8,10 @@ module.exports = defineConfig({
         timeout: 15_000
     },
     reporter: 'list',
+    projects: [
+        { name: 'ui', testIgnore: '**/live-urls.spec.js' },
+        { name: 'live', testMatch: '**/live-urls.spec.js' }
+    ],
     use: {
         trace: 'retain-on-failure',
         screenshot: 'only-on-failure',
